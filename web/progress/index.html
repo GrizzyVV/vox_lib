@@ -16,14 +16,14 @@
   .anchor[data-pos="middle"] { top: 50%; transform: translate(-50%, -50%); }
 
   /* BAR */
-  .bar-wrap { width: 340px; display: none; flex-direction: column; gap: 8px; }
+  .bar-wrap { width: 340px; display: none; flex-direction: column; gap: 9px; background: rgba(8,8,10,.88); border: 1px solid var(--line-2); border-radius: var(--r); padding: 13px 16px; box-shadow: 0 10px 34px rgba(0,0,0,.6); backdrop-filter: blur(14px); }
   .bar-wrap.on { display: flex; }
   .bar-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text); text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
   .bar-track { height: 10px; background: rgba(8,8,10,.78); border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
   .bar-fill { height: 100%; width: 0%; background: var(--red-grad); border-radius: 999px; }
 
   /* CIRCLE */
-  .circle-wrap { display: none; flex-direction: column; align-items: center; gap: 10px; }
+  .circle-wrap { display: none; flex-direction: column; align-items: center; gap: 10px; background: rgba(8,8,10,.88); border: 1px solid var(--line-2); border-radius: var(--r); padding: 16px 20px; box-shadow: 0 10px 34px rgba(0,0,0,.6); backdrop-filter: blur(14px); }
   .circle-wrap.on { display: flex; }
   .ring { width: 92px; height: 92px; transform: rotate(-90deg); }
   .ring__bg { fill: none; stroke: rgba(8,8,10,.78); stroke-width: 8; }
@@ -70,10 +70,12 @@
       // reset, then animate to full over `dur` (Lua resolves completion/cancel; this is pure visual)
       if (isCircle) {
         ringFg.style.transition = "none"; ringFg.style.strokeDashoffset = CIRC;
-        requestAnimationFrame(function () { ringFg.style.transition = "stroke-dashoffset " + dur + "ms linear"; ringFg.style.strokeDashoffset = 0; });
+        void ringFg.getBoundingClientRect();   // force reflow so the reset paints before animating (else it jumps to full)
+        ringFg.style.transition = "stroke-dashoffset " + dur + "ms linear"; ringFg.style.strokeDashoffset = 0;
       } else {
         barFill.style.transition = "none"; barFill.style.width = "0%";
-        requestAnimationFrame(function () { barFill.style.transition = "width " + dur + "ms linear"; barFill.style.width = "100%"; });
+        void barFill.offsetWidth;              // force reflow before animating to 100%
+        barFill.style.transition = "width " + dur + "ms linear"; barFill.style.width = "100%";
       }
     }
     function hide() { anchor.classList.remove("in"); }

@@ -1,8 +1,20 @@
 {
   "client": [
     "init.lua",
+    "dev/_devsched.lua",
+    "modules/_dialog.lua",
+    "modules/notify.lua",
+    "modules/textui.lua",
+    "modules/alert.lua",
+    "modules/progress.lua",
+    "modules/input.lua",
+    "modules/context.lua",
+    "modules/menu.lua",
+    "modules/skillcheck.lua",
+    "modules/radial.lua",
     "modules/weather.lua",
     "modules/freecam.lua",
+    "dev/uitest.lua",
     "dev/weather_menu.lua",
     "dev/freecam_dev.lua"
   ]
