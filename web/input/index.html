@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · inputDialog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Anton&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  .scrim { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,.55); backdrop-filter: blur(2px); }
+  .modal { width: 440px; max-width: calc(100vw - 48px); max-height: 86vh; background: var(--solid); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 24px 70px rgba(0,0,0,.65); overflow: hidden; display: flex; flex-direction: column; transform: translateY(8px) scale(.98); opacity: 0; transition: transform .18s ease, opacity .18s ease; }
+  .scrim.in .modal { transform: none; opacity: 1; }
+  .modal__bar { height: 3px; background: var(--red-grad); }
+  .modal__head { font-family: var(--display); font-size: 22px; letter-spacing: .02em; text-transform: uppercase; color: var(--text); padding: 20px 24px 4px; }
+  .modal__body { padding: 12px 24px 4px; overflow-y: auto; }
+  .field { margin-bottom: 16px; }
+  .field__lab { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--copy); margin-bottom: 7px; display: flex; gap: 6px; align-items: center; }
+  .field__lab .req { color: var(--red); }
+  .field__lab i { color: var(--red); font-size: 12px; }
+  .field__desc { font-size: 11px; color: var(--dim); margin: -3px 0 7px; }
+  .ctrl, textarea.ctrl, select.ctrl { width: 100%; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: var(--r-sm); color: var(--text); font-family: var(--ui); font-size: 13px; padding: 10px 12px; outline: none; transition: border-color .15s; }
+  .ctrl:focus { border-color: var(--red); }
+  textarea.ctrl { resize: vertical; min-height: 66px; }
+  .row-check { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .sw { width: 44px; height: 24px; border-radius: 999px; background: rgba(255,255,255,.12); position: relative; transition: background .15s; flex: 0 0 auto; }
+  .sw.on { background: var(--red); }
+  .sw::after { content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:left .15s; }
+  .sw.on::after { left: 23px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; border-radius: 50%; background: var(--red); cursor: pointer; }
+  .slider-val { font-family: var(--mono); font-size: 12px; color: var(--red); min-width: 34px; text-align: right; }
+  .err { border-color: var(--red) !important; }
+  .modal__foot { display: flex; gap: 10px; justify-content: flex-end; padding: 14px 24px 20px; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<div class="scrim" id="scrim">
+  <div class="modal">
+    <div class="modal__bar"></div>
+    <div class="modal__head vx-title" id="head">Input</div>
+    <div class="modal__body" id="body"></div>
+    <div class="modal__foot">
+      <button class="vx-btn" id="cancel">Cancel</button>
+      <button class="vx-btn vx-btn--primary" id="confirm">Confirm</button>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var scrim = document.getElementById("scrim"), head = document.getElementById("head"), body = document.getElementById("body");
+    var open = false, fields = [];   // [{row, get, validate}]
+    function emit(n, d) { if (typeof hEvent === "function") hEvent(n, d || {}); }
+    function el(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+
+    function build(rows) {
+      body.innerHTML = ""; fields = [];
+      (rows || []).forEach(function (row) {
+        var wrap = el("div", "field");
+        var lab = el("div", "field__lab");
+        lab.innerHTML = (row.icon ? '<i class="fa-solid fa-' + row.icon + '"></i>' : "") +
+          '<span>' + (row.label || "") + '</span>' + (row.required ? '<span class="req">*</span>' : "");
+        wrap.appendChild(lab);
+        if (row.description) wrap.appendChild(el("div", "field__desc", document.createTextNode(row.description).textContent));
+        var get, ctrl;
+        var t = row.type || "input";
+        if (t === "checkbox") {
+          var rc = el("div", "row-check"); var sw = el("div", "sw" + (row.default ? " on" : ""));
+          rc.appendChild(sw); rc.appendChild(el("span", null, "<span style='font-size:12px;color:var(--copy)'>" + (row.checkboxLabel || "Enable") + "</span>"));
+          rc.addEventListener("click", function () { sw.classList.toggle("on"); });
+          wrap.appendChild(rc); get = function () { return sw.classList.contains("on"); };
+        } else if (t === "select" || t === "multi-select") {
+          ctrl = el("select", "ctrl");
+          (row.options || []).forEach(function (o) { var op = el("option"); op.value = o.value; op.textContent = o.label || o.value; if (o.value === row.default) op.selected = true; ctrl.appendChild(op); });
+          wrap.appendChild(ctrl); get = function () { return ctrl.value; };
+        } else if (t === "slider") {
+          var sr = el("div", "slider-row"); var rg = el("input", "ctrl"); rg.type = "range";
+          rg.min = row.min != null ? row.min : 0; rg.max = row.max != null ? row.max : 100; rg.step = row.step || 1;
+          rg.value = row.default != null ? row.default : rg.min; rg.style.padding = "0"; rg.style.background = "rgba(255,255,255,.12)";
+          var val = el("div", "slider-val", rg.value); rg.addEventListener("input", function () { val.textContent = rg.value; });
+          sr.appendChild(rg); sr.appendChild(val); wrap.appendChild(sr); get = function () { return Number(rg.value); };
+        } else if (t === "textarea") {
+          ctrl = el("textarea", "ctrl"); ctrl.placeholder = row.placeholder || ""; if (row.default) ctrl.value = row.default;
+          wrap.appendChild(ctrl); get = function () { return ctrl.value; };
+        } else { // input / number / date / color
+          ctrl = el("input", "ctrl");
+          ctrl.type = (t === "number") ? "number" : (t === "date") ? "date" : (t === "color") ? "color" : "text";
+          ctrl.placeholder = row.placeholder || ""; if (row.default != null) ctrl.value = row.default;
+          if (row.min != null) ctrl.min = row.min; if (row.max != null) ctrl.max = row.max;
+          wrap.appendChild(ctrl); get = function () { return t === "number" ? (ctrl.value === "" ? null : Number(ctrl.value)) : ctrl.value; };
+        }
+        body.appendChild(wrap);
+        fields.push({ row: row, get: get, ctrl: ctrl, wrap: wrap });
+      });
+    }
+
+    function show(d) {
+      d = d || {}; head.textContent = d.heading || "Input"; build(d.rows);
+      scrim.style.display = "flex"; requestAnimationFrame(function () { scrim.classList.add("in"); }); open = true;
+    }
+    function close() { open = false; scrim.classList.remove("in"); setTimeout(function () { scrim.style.display = "none"; }, 180); }
+
+    function submit() {
+      if (!open) return;
+      var vals = [], ok = true;
+      fields.forEach(function (f) {
+        var v = f.get();
+        if (f.row.required && (v === "" || v == null)) { ok = false; if (f.ctrl) f.ctrl.classList.add("err"); }
+        vals.push(v);
+      });
+      if (!ok) return;
+      close(); emit("input:response", { result: vals });
+    }
+    function cancel() { if (!open) return; close(); emit("input:response", { result: null }); }
+
+    document.getElementById("confirm").addEventListener("click", submit);
+    document.getElementById("cancel").addEventListener("click", cancel);
+    document.addEventListener("keydown", function (e) { if (!open) return; if (e.key === "Escape") cancel(); else if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") submit(); });
+    window.addEventListener("message", function (e) { var m = e.data; if (!m || !m.name) return; if (m.name === "input:show") show(m.args && m.args[0]); else if (m.name === "input:hide") cancel(); });
+
+    setTimeout(function () { emit("Ready", {}); }, 80);
+    window.__voxInput = show;
+    if (location.hash === "#preview") {
+      document.body.style.background = "#0A0A0A";
+      show({ heading: "Register Vehicle", rows: [
+        { type: "input", label: "Plate", placeholder: "ABC 123", required: true, icon: "id-card" },
+        { type: "select", label: "Color", options: [{ value: "red", label: "Red" }, { value: "blk", label: "Black" }] },
+        { type: "slider", label: "Mileage", min: 0, max: 200, default: 40 },
+        { type: "checkbox", label: "Insured", checkboxLabel: "Has insurance" },
+      ] });
+    }
+  })();
+</script>
+</body>
+</html>

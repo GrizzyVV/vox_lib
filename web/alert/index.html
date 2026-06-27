@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · alertDialog</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Anton&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  .scrim { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, .55); backdrop-filter: blur(2px); }
+  .scrim[data-top="1"] { align-items: flex-start; padding-top: 12vh; }
+  .modal { width: 440px; max-width: calc(100vw - 48px); background: var(--solid); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 24px 70px rgba(0, 0, 0, .65); overflow: hidden; transform: translateY(8px) scale(.98); opacity: 0; transition: transform .18s ease, opacity .18s ease; }
+  .scrim.in .modal { transform: none; opacity: 1; }
+  .modal[data-size="xs"] { width: 320px; } .modal[data-size="sm"] { width: 380px; }
+  .modal[data-size="lg"] { width: 560px; } .modal[data-size="xl"] { width: 680px; }
+
+  .modal__bar { height: 3px; background: var(--red-grad); }
+  .modal__body { padding: 22px 24px 8px; }
+  .modal__head { font-family: var(--display); font-size: 22px; letter-spacing: .02em; text-transform: uppercase; color: var(--text); margin-bottom: 10px; }
+  .modal__content { font-size: 13.5px; line-height: 1.5; color: var(--copy); }
+  .modal__content strong { color: var(--text); font-weight: 700; }
+  .modal__foot { display: flex; gap: 10px; justify-content: flex-end; padding: 18px 24px 22px; }
+</style>
+</head>
+<body>
+<div class="scrim" id="scrim" data-top="0">
+  <div class="modal" id="modal" data-size="md">
+    <div class="modal__bar"></div>
+    <div class="modal__body">
+      <div class="modal__head vx-title" id="head">Notice</div>
+      <div class="modal__content md" id="content"></div>
+    </div>
+    <div class="modal__foot" id="foot">
+      <button class="vx-btn" id="btnCancel" style="display:none">Cancel</button>
+      <button class="vx-btn vx-btn--primary" id="btnConfirm">Confirm</button>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var scrim = document.getElementById("scrim"), modal = document.getElementById("modal"),
+        head = document.getElementById("head"), content = document.getElementById("content"),
+        btnConfirm = document.getElementById("btnConfirm"), btnCancel = document.getElementById("btnCancel");
+    var open = false;
+
+    function md(s) {
+      var d = document.createElement("div"); d.textContent = String(s == null ? "" : s);
+      return d.innerHTML.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+    }
+    function emit(name, data) { if (typeof hEvent === "function") hEvent(name, data || {}); }
+
+    function show(d) {
+      d = d || {};
+      head.textContent = d.header != null ? d.header : "Notice";
+      content.innerHTML = md(d.content);
+      modal.setAttribute("data-size", d.size || "md");
+      scrim.setAttribute("data-top", d.centered === false ? "1" : "0");
+      btnCancel.style.display = d.cancel ? "" : "none";
+      var labels = d.labels || {};
+      btnConfirm.textContent = labels.confirm || "Confirm";
+      btnCancel.textContent = labels.cancel || "Cancel";
+      scrim.style.display = "flex";
+      requestAnimationFrame(function () { scrim.classList.add("in"); });
+      open = true;
+    }
+    function resolve(result) {
+      if (!open) return;
+      open = false; scrim.classList.remove("in");
+      setTimeout(function () { scrim.style.display = "none"; }, 180);
+      emit("alert:response", { result: result });
+    }
+
+    btnConfirm.addEventListener("click", function () { resolve("confirm"); });
+    btnCancel.addEventListener("click", function () { resolve("cancel"); });
+    document.addEventListener("keydown", function (e) {
+      if (!open) return;
+      if (e.key === "Escape") resolve("cancel");
+      else if (e.key === "Enter") resolve("confirm");
+    });
+
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "alert:show") show(m.args && m.args[0]);
+      else if (m.name === "alert:hide") resolve("cancel");
+    });
+
+    // Ready handshake (so Lua can buffer until the page is live) + test hooks
+    setTimeout(function () { emit("Ready", {}); }, 80);
+    window.__voxAlert = show;
+    if (location.hash === "#preview") {
+      document.body.style.background = "#0A0A0A";
+      show({ header: "Police Notice", content: "You have been **fined** $500 for reckless driving. Pay now?", cancel: true, labels: { confirm: "Pay $500", cancel: "Contest" } });
+    }
+  })();
+</script>
+</body>
+</html>

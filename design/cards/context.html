@@ -1,0 +1,59 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · context</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --mint:#04FFD1; --mint-deep:#003032; --surface:#1E1E24; --raise:#26262d; --line:#28282A; --text:#EDEDED; --copy:#B5B5B6; --muted:#6b6b70;
+    --font-ui:'Geist','Inter',sans-serif; --font-body:'Inter',sans-serif; --chamfer:8px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--font-body); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:30px; }
+  .menu { width:300px; background:var(--surface); border:1px solid var(--line);
+    clip-path:polygon(0 0,100% 0,100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,0 100%);
+    box-shadow:0 20px 50px rgba(0,0,0,.55); overflow:hidden; }
+  .menu__title { font-family:var(--font-ui); font-weight:600; font-size:14px; padding:14px 16px; border-bottom:1px solid var(--line); }
+  .item { display:flex; gap:12px; align-items:flex-start; padding:11px 16px; border-bottom:1px solid rgba(40,40,42,.5); cursor:pointer; position:relative; }
+  .item:last-child { border-bottom:none; }
+  .item--active { background:var(--raise); border-left:3px solid var(--mint); padding-left:13px; }
+  .item--disabled { opacity:.4; cursor:not-allowed; }
+  .item__icon { width:24px; height:24px; flex:0 0 auto; display:grid; place-items:center; color:var(--mint); font-size:14px; margin-top:1px; }
+  .item__body { flex:1 1 auto; min-width:0; }
+  .item__title { font-family:var(--font-ui); font-weight:500; font-size:13.5px; color:var(--text); }
+  .item__desc { font-size:12px; color:var(--copy); margin-top:2px; line-height:1.35; }
+  .item__arrow { color:var(--muted); align-self:center; font-size:12px; }
+  .bar { height:4px; background:var(--line); border-radius:2px; margin-top:7px; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:var(--mint); }
+</style>
+</head>
+<body>
+  <div class="menu">
+    <div class="menu__title">Vehicle Options</div>
+
+    <div class="item item--active">
+      <div class="item__icon"><i class="fa-solid fa-lock"></i></div>
+      <div class="item__body"><div class="item__title">Lock doors</div><div class="item__desc">Toggle the vehicle locks</div></div>
+    </div>
+
+    <div class="item">
+      <div class="item__icon"><i class="fa-solid fa-gas-pump"></i></div>
+      <div class="item__body"><div class="item__title">Fuel</div><div class="item__desc">68% remaining</div>
+        <div class="bar"><span style="width:68%"></span></div>
+      </div>
+    </div>
+
+    <div class="item item--disabled">
+      <div class="item__icon"><i class="fa-solid fa-hand"></i></div>
+      <div class="item__body"><div class="item__title">Impound</div><div class="item__desc">Requires police access</div></div>
+    </div>
+
+    <div class="item">
+      <div class="item__icon"><i class="fa-solid fa-box-archive"></i></div>
+      <div class="item__body"><div class="item__title">Storage</div><div class="item__desc">Open trunk &amp; glovebox</div></div>
+      <div class="item__arrow"><i class="fa-solid fa-chevron-right"></i></div>
+    </div>
+  </div>
+</body>
+</html>

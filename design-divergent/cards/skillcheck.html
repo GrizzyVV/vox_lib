@@ -1,0 +1,40 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · skillCheck (divergent)</title>
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --panel:rgba(255,255,255,.035); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; --disp:'Anton',sans-serif; --mono:'JetBrains Mono',monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:34px; }
+  .panel { width:440px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 24px; backdrop-filter:blur(10px); }
+
+  .head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; }
+  .head .e { font-size:9.5px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--red); }
+  .head .t { font-family:var(--disp); font-size:24px; text-transform:uppercase; line-height:1; margin-top:3px; }
+  .key { display:grid; place-items:center; width:40px; height:40px; background:rgba(240,69,78,.12); border:1px solid rgba(240,69,78,.5); border-radius:7px; font-weight:700; font-size:20px; color:var(--red); }
+
+  .track { position:relative; height:30px; background:rgba(0,0,0,.4); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .ticks { position:absolute; inset:0; display:flex; }
+  .ticks i { flex:1; border-right:1px solid rgba(255,255,255,.05); }
+  .zone { position:absolute; top:0; bottom:0; left:54%; width:16%; background:rgba(240,69,78,.18); border-left:2px solid var(--red); border-right:2px solid var(--red); }
+  .marker { position:absolute; top:-3px; bottom:-3px; left:61%; width:3px; background:var(--red); box-shadow:0 0 10px var(--red); }
+  .foot { display:flex; justify-content:space-between; margin-top:12px; font-family:var(--mono); font-size:10px; letter-spacing:.06em; color:#5a6066; }
+  .foot .h { color:var(--red); }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="head"><div><div class="e">// Skill check</div><div class="t">Hotwire</div></div><div class="key">E</div></div>
+    <div class="track">
+      <div class="ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <div class="zone"></div>
+      <div class="marker"></div>
+    </div>
+    <div class="foot"><span>&lt; INDICATOR SWEEP</span><span class="h">▶ HIT ON ZONE</span></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "client": [
+    "init.lua",
+    "modules/weather.lua",
+    "modules/freecam.lua",
+    "dev/weather_menu.lua",
+    "dev/freecam_dev.lua"
+  ]
+}

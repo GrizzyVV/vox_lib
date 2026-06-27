@@ -1,0 +1,40 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · alertDialog (divergent)</title>
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --panel:rgba(20,20,22,.9); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; --disp:'Anton',sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:34px; }
+  .scrim { position:fixed; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(3px); display:grid; place-items:center; }
+
+  .dlg { width:400px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px 24px 20px; box-shadow:0 30px 70px rgba(0,0,0,.6); backdrop-filter:blur(14px); }
+  .eyebrow { font-size:10px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--red); }
+  .title { font-family:var(--disp); font-size:30px; line-height:.95; text-transform:uppercase; margin-top:7px; }
+  .body { font-size:13.5px; line-height:1.55; color:var(--copy); margin-top:13px; }
+  .body b { color:var(--text); font-weight:600; }
+
+  .actions { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+  .btn { font-family:var(--ui); font-weight:700; font-size:12px; letter-spacing:.08em; text-transform:uppercase; padding:10px 20px; border-radius:6px; cursor:pointer; border:1px solid transparent; }
+  .btn--ghost { background:transparent; border-color:var(--line); color:var(--copy); }
+  .btn--danger { background:linear-gradient(180deg, #F0454E, #C8313C); color:#fff; box-shadow:0 4px 16px rgba(240,69,78,.35); }
+</style>
+</head>
+<body>
+  <div class="scrim">
+    <div class="dlg">
+      <div class="eyebrow">// Confirm required</div>
+      <div class="title">Delete vehicle?</div>
+      <div class="body">Permanently remove <b>Sultan RS</b> from your garage. This action <b>cannot be undone</b>.</div>
+      <div class="actions">
+        <button class="btn btn--ghost">Cancel</button>
+        <button class="btn btn--danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

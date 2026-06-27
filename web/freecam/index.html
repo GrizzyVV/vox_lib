@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · freecam</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Anton&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  body { display: flex; align-items: flex-end; }
+  .help { position: fixed; right: 28px; bottom: 200px; width: 236px; background: rgba(8,8,10,.88); border: 1px solid var(--line-2);
+    border-radius: var(--r); backdrop-filter: blur(16px); box-shadow: 0 14px 48px rgba(0,0,0,.65); overflow: hidden;
+    opacity: 0; transform: translateY(10px); transition: opacity .25s ease, transform .25s ease; }
+  .help .row .lab { color: #c8ccd0; }   /* a touch brighter on the dark panel */
+  .help.in { opacity: 1; transform: none; }
+  .help__bar { height: 3px; background: var(--red-grad); }
+  .help__hd { padding: 13px 16px 4px; }
+  .help__hd .eyebrow { margin-bottom: 5px; }
+  .help__hd h1 { font-family: var(--display); font-size: 19px; letter-spacing: .02em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+  .help__hd h1 i { color: var(--red); font-size: 15px; }
+  .rows { padding: 8px 16px 15px; display: flex; flex-direction: column; gap: 9px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .row .lab { font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--copy); }
+  .row .keys { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+</style>
+</head>
+<body>
+<div class="help" id="help">
+  <div class="help__bar"></div>
+  <div class="help__hd">
+    <div class="eyebrow">vox_lib · camera</div>
+    <h1><i class="fa-solid fa-video"></i> Freecam</h1>
+  </div>
+  <div class="rows" id="rows"></div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var ROWS = [
+      { lab: "Move", keys: ["W", "A", "S", "D"] },
+      { lab: "Up", keys: ["E", "Space"] },
+      { lab: "Down", keys: ["Q", "Ctrl", "C"] },
+      { lab: "Faster", keys: ["Shift"] },
+      { lab: "Look", keys: ["Mouse"] },
+      { lab: "Exit", keys: ["Backspace", "/freecam"] }
+    ];
+    var rows = document.getElementById("rows"), help = document.getElementById("help");
+    ROWS.forEach(function (r) {
+      var el = document.createElement("div"); el.className = "row";
+      var keys = r.keys.map(function (k) { return '<span class="vx-key">' + k + "</span>"; }).join("");
+      el.innerHTML = '<span class="lab">' + r.lab + '</span><span class="keys">' + keys + "</span>";
+      rows.appendChild(el);
+    });
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "help:show") help.classList.add("in");
+      else if (m.name === "help:hide") help.classList.remove("in");
+    });
+    setTimeout(function () { if (typeof hEvent === "function") hEvent("Ready", {}); }, 80);
+    if (location.hash === "#preview") { document.body.style.background = "#0A0A0A"; help.classList.add("in"); }
+  })();
+</script>
+</body>
+</html>

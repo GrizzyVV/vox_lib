@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · progress</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  .anchor { position: fixed; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; opacity: 0; transition: opacity .18s ease; }
+  .anchor.in { opacity: 1; }
+  .anchor[data-pos="bottom"] { bottom: 12%; }
+  .anchor[data-pos="middle"] { top: 50%; transform: translate(-50%, -50%); }
+
+  /* BAR */
+  .bar-wrap { width: 340px; display: none; flex-direction: column; gap: 8px; }
+  .bar-wrap.on { display: flex; }
+  .bar-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text); text-align: center; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+  .bar-track { height: 10px; background: rgba(8,8,10,.78); border: 1px solid var(--line-2); border-radius: 999px; overflow: hidden; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+  .bar-fill { height: 100%; width: 0%; background: var(--red-grad); border-radius: 999px; }
+
+  /* CIRCLE */
+  .circle-wrap { display: none; flex-direction: column; align-items: center; gap: 10px; }
+  .circle-wrap.on { display: flex; }
+  .ring { width: 92px; height: 92px; transform: rotate(-90deg); }
+  .ring__bg { fill: none; stroke: rgba(8,8,10,.78); stroke-width: 8; }
+  .ring__fg { fill: none; stroke: url(#vxgrad); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 251.2; stroke-dashoffset: 251.2; }
+  .circle-label { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text); text-shadow: 0 1px 3px rgba(0,0,0,.8); }
+
+  .cancel-hint { margin-top: 9px; font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--copy); display: none; align-items: center; gap: 6px; }
+  .cancel-hint.on { display: flex; }
+</style>
+</head>
+<body>
+<svg width="0" height="0"><defs><linearGradient id="vxgrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0454E"/><stop offset="1" stop-color="#C9333B"/></linearGradient></defs></svg>
+<div class="anchor" id="anchor" data-pos="bottom">
+  <div class="bar-wrap" id="barWrap">
+    <div class="bar-label" id="barLabel"></div>
+    <div class="bar-track"><div class="bar-fill" id="barFill"></div></div>
+  </div>
+  <div class="circle-wrap" id="circleWrap">
+    <svg class="ring" viewBox="0 0 92 92"><circle class="ring__bg" cx="46" cy="46" r="40"/><circle class="ring__fg" id="ringFg" cx="46" cy="46" r="40"/></svg>
+    <div class="circle-label" id="circleLabel"></div>
+  </div>
+  <div class="cancel-hint" id="cancelHint"><span class="vx-key" id="cancelKey">X</span> Cancel</div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var anchor = document.getElementById("anchor"),
+        barWrap = document.getElementById("barWrap"), barFill = document.getElementById("barFill"), barLabel = document.getElementById("barLabel"),
+        circleWrap = document.getElementById("circleWrap"), ringFg = document.getElementById("ringFg"), circleLabel = document.getElementById("circleLabel"),
+        cancelHint = document.getElementById("cancelHint"), cancelKey = document.getElementById("cancelKey");
+    var CIRC = 2 * Math.PI * 40; // 251.2
+
+    function show(d) {
+      d = d || {};
+      var dur = typeof d.duration === "number" ? d.duration : 5000;
+      anchor.setAttribute("data-pos", d.position || "bottom");
+      var isCircle = d.kind === "circle";
+      barWrap.classList.toggle("on", !isCircle);
+      circleWrap.classList.toggle("on", isCircle);
+      barLabel.textContent = circleLabel.textContent = d.label || "";
+      cancelHint.classList.toggle("on", !!d.canCancel);
+      if (d.cancelKey) cancelKey.textContent = d.cancelKey;
+      anchor.classList.add("in");
+      // reset, then animate to full over `dur` (Lua resolves completion/cancel; this is pure visual)
+      if (isCircle) {
+        ringFg.style.transition = "none"; ringFg.style.strokeDashoffset = CIRC;
+        requestAnimationFrame(function () { ringFg.style.transition = "stroke-dashoffset " + dur + "ms linear"; ringFg.style.strokeDashoffset = 0; });
+      } else {
+        barFill.style.transition = "none"; barFill.style.width = "0%";
+        requestAnimationFrame(function () { barFill.style.transition = "width " + dur + "ms linear"; barFill.style.width = "100%"; });
+      }
+    }
+    function hide() { anchor.classList.remove("in"); }
+
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "progress:show") show(m.args && m.args[0]);
+      else if (m.name === "progress:hide") hide();
+    });
+
+    window.__voxProgress = show;
+    if (location.hash === "#preview") {
+      document.body.style.background = "#0A0A0A";
+      show({ kind: "bar", duration: 6000, label: "Searching the dumpster…", canCancel: true });
+    }
+  })();
+</script>
+</body>
+</html>

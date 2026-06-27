@@ -1,0 +1,61 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · notify (divergent)</title>
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --green:#3FD178; --amber:#E8B339; --blue:#6EA8FE;
+    --panel:rgba(255,255,255,.035); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; --disp:'Anton',sans-serif; --mono:'JetBrains Mono',monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); padding:34px; min-height:100vh; display:flex; flex-direction:column; gap:12px; align-items:flex-start; }
+  .eyebrow { font-family:var(--ui); font-size:11px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:#5a6066; }
+
+  .toast { position:relative; width:368px; display:flex; gap:0; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; backdrop-filter:blur(8px); }
+  .rail { width:3px; background:var(--accent); flex:0 0 auto; }
+  .main { flex:1 1 auto; padding:11px 14px; min-width:0; }
+  .top { display:flex; align-items:center; gap:10px; }
+  .tag { font-family:var(--ui); font-size:10px; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+  .tag::before { content:'// '; opacity:.7; }
+  .count { margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--copy); }
+  .title { font-family:var(--ui); font-weight:700; font-size:13px; letter-spacing:.04em; text-transform:uppercase; margin-top:5px; }
+  .desc { font-family:var(--ui); font-weight:400; font-size:12.5px; color:var(--copy); margin-top:3px; }
+  .ticks { display:flex; gap:3px; margin-top:9px; }
+  .ticks i { height:3px; flex:1; background:rgba(255,255,255,.08); border-radius:2px; }
+  .ticks i.on { background:var(--accent); }
+
+  .success{--accent:var(--green)} .error{--accent:var(--red)} .warning{--accent:var(--amber)} .inform{--accent:var(--blue)}
+</style>
+</head>
+<body>
+  <div class="eyebrow">// lib.notify — HELIX Life</div>
+
+  <div class="toast success"><div class="rail"></div><div class="main">
+    <div class="top"><span class="tag">Success</span><span class="count">2.4s</span></div>
+    <div class="title">Vehicle saved</div>
+    <div class="desc">Sultan RS stored to your garage.</div>
+    <div class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div>
+  </div></div>
+
+  <div class="toast error"><div class="rail"></div><div class="main">
+    <div class="top"><span class="tag">Error</span><span class="count">4.1s</span></div>
+    <div class="title">Transaction failed</div>
+    <div class="desc">Insufficient funds — $1,240 short.</div>
+    <div class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+  </div></div>
+
+  <div class="toast warning"><div class="rail"></div><div class="main">
+    <div class="top"><span class="tag">Warning</span><span class="count">1.8s</span></div>
+    <div class="title">Low ammo</div>
+    <div class="ticks"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+  </div></div>
+
+  <div class="toast inform"><div class="rail"></div><div class="main">
+    <div class="top"><span class="tag">Inform</span><span class="count">3.0s</span></div>
+    <div class="title">Press E to interact</div>
+    <div class="ticks"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+  </div></div>
+</body>
+</html>

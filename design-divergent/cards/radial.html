@@ -1,0 +1,40 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · radial (divergent)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --panel:rgba(255,255,255,.04); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:30px; }
+  .wheel { position:relative; width:300px; height:300px; }
+  .wheel::before { content:''; position:absolute; inset:40px; border:1px dashed rgba(255,255,255,.08); border-radius:50%; }
+
+  .hub { position:absolute; left:150px; top:150px; transform:translate(-50%,-50%); width:84px; height:84px; border-radius:50%;
+    background:var(--panel); border:1px solid var(--line); display:flex; flex-direction:column; align-items:center; justify-content:center; backdrop-filter:blur(8px); }
+  .hub .k { font-weight:700; font-size:18px; color:var(--red); }
+  .hub small { color:var(--copy); font-size:9px; font-weight:600; letter-spacing:.16em; text-transform:uppercase; margin-top:1px; }
+
+  .opt { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:7px; width:74px; }
+  .opt .ic { width:52px; height:52px; border-radius:50%; background:var(--panel); border:1px solid var(--line); display:grid; place-items:center; font-size:18px; color:var(--text); backdrop-filter:blur(8px); }
+  .opt .lb { font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--copy); text-align:center; }
+  .opt--active .ic { background:linear-gradient(180deg,#F0454E,#C8313C); border-color:var(--red); color:#fff; box-shadow:0 0 18px rgba(240,69,78,.5); }
+  .opt--active .lb { color:var(--red); }
+</style>
+</head>
+<body>
+  <div class="wheel">
+    <div class="hub"><span class="k">Z</span><small>Radial</small></div>
+    <div class="opt opt--active" style="left:150px;top:45px"><div class="ic"><i class="fa-solid fa-shield-halved"></i></div><div class="lb">Police</div></div>
+    <div class="opt" style="left:241px;top:97px"><div class="ic"><i class="fa-solid fa-briefcase"></i></div><div class="lb">Business</div></div>
+    <div class="opt" style="left:241px;top:203px"><div class="ic"><i class="fa-solid fa-warehouse"></i></div><div class="lb">Garage</div></div>
+    <div class="opt" style="left:150px;top:255px"><div class="ic"><i class="fa-solid fa-hand"></i></div><div class="lb">Frisk</div></div>
+    <div class="opt" style="left:59px;top:203px"><div class="ic"><i class="fa-solid fa-magnifying-glass"></i></div><div class="lb">Search</div></div>
+    <div class="opt" style="left:59px;top:97px"><div class="ic"><i class="fa-solid fa-bus"></i></div><div class="lb">Jail</div></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · textUI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  /* anchors — ox_lib textUI positions: right-center (default), left-center, top-center */
+  .anchor { position: fixed; display: flex; padding: 28px; pointer-events: none; }
+  .anchor[data-pos="right-center"] { top: 50%; right: 0; transform: translateY(-50%); }
+  .anchor[data-pos="left-center"]  { top: 50%; left: 0;  transform: translateY(-50%); }
+  .anchor[data-pos="top-center"]   { top: 0; left: 50%; transform: translateX(-50%); }
+
+  .tui {
+    display: inline-flex; align-items: center; gap: 11px;
+    padding: 10px 15px 10px 12px; max-width: 360px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+    backdrop-filter: blur(12px); box-shadow: 0 8px 30px rgba(0, 0, 0, .45);
+  }
+  .tui[data-align="top"] { align-items: flex-start; }
+  .tui__ic { flex: 0 0 auto; width: 24px; height: 24px; display: grid; place-items: center; color: var(--red); font-size: 14px; }
+  .tui__txt { font-size: 12.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; line-height: 1.35; color: var(--text); }
+  .tui__txt .price, .tui__txt .accent { color: var(--red); }
+</style>
+</head>
+<body>
+<div class="anchor vx-fade" id="anchor" data-pos="right-center" style="display:none">
+  <div class="tui" id="tui"><span class="tui__ic" id="ic" style="display:none"></span><span class="tui__txt md" id="txt"></span></div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var anchor = document.getElementById("anchor"), tui = document.getElementById("tui"),
+        ic = document.getElementById("ic"), txt = document.getElementById("txt");
+    var open = false, curText = "";
+
+    // safe markdown: escape, then **bold**, [KEY] -> key badge (1-4 chars), $price -> accent, newlines
+    function render(s) {
+      var d = document.createElement("div"); d.textContent = String(s == null ? "" : s);
+      var html = d.innerHTML;
+      html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+      html = html.replace(/\[([\w +/-]{1,5})\]/g, '<span class="vx-key">$1</span>');
+      html = html.replace(/(\$[\d.,]+(?:\/\w+)?)/g, '<span class="price">$1</span>');
+      html = html.replace(/\n/g, "<br>");
+      return html;
+    }
+
+    function show(data) {
+      data = data || {};
+      curText = data.text != null ? data.text : (typeof data === "string" ? data : "");
+      var opts = data.options || {};
+      txt.innerHTML = render(curText);
+      anchor.setAttribute("data-pos", opts.position || "right-center");
+      tui.setAttribute("data-align", opts.alignIcon || "center");
+      // icon
+      if (opts.icon) {
+        var anim = opts.iconAnimation ? (" fa-" + String(opts.iconAnimation).replace(/([A-Z])/g, "-$1").toLowerCase()) : "";
+        ic.innerHTML = '<i class="fa-solid fa-' + opts.icon + anim + '"></i>';
+        ic.style.color = opts.iconColor || "var(--red)";
+        ic.style.display = "grid";
+      } else { ic.style.display = "none"; }
+      // style overrides (ox_lib `style` table)
+      if (opts.style && typeof opts.style === "object") { for (var k in opts.style) { try { tui.style[k] = opts.style[k]; } catch (e) {} } }
+      anchor.style.display = "flex";
+      requestAnimationFrame(function () { anchor.classList.add("in"); });
+      open = true;
+    }
+    function hide() {
+      open = false; anchor.classList.remove("in");
+      setTimeout(function () { if (!open) anchor.style.display = "none"; }, 200);
+    }
+
+    // HELIX envelope { name, args:[payload] }
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "textui:show") show(m.args && m.args[0]);
+      else if (m.name === "textui:hide") hide();
+    });
+
+    // test/preview hooks
+    window.__voxTextUI = { show: show, hide: hide, isOpen: function () { return open; } };
+    if (location.hash === "#preview") {
+      document.body.style.background = "#0A0A0A";
+      show({ text: "[E] Refuel — $1.20/L", options: { icon: "gas-pump" } });
+    }
+  })();
+</script>
+</body>
+</html>

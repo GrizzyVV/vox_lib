@@ -1,0 +1,46 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · textui</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root {
+    --mint: #04FFD1; --surface: #1E1E24; --line: #28282A; --text: #EDEDED; --copy: #B5B5B6;
+    --font-ui: 'Geist','Inter',sans-serif; --font-body: 'Inter',sans-serif; --chamfer: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0A0A0A; font-family: var(--font-body); color: var(--text); padding: 32px; min-height: 100vh; display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+  .label { font-family: var(--font-ui); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6b6b70; }
+
+  .textui {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent, var(--mint));
+    color: var(--text); font-size: 14px; padding: 10px 14px;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, 0 100%);
+    box-shadow: 0 6px 24px rgba(0,0,0,.45);
+  }
+  .textui__icon { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: var(--accent, var(--mint)); color: #000; flex: 0 0 auto; }
+  .key {
+    display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px;
+    background: #0A0A0A; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px;
+    font-family: var(--font-ui); font-weight: 600; font-size: 12px; color: var(--mint);
+  }
+  .textui__text { font-family: var(--font-body); }
+</style>
+</head>
+<body>
+  <div class="label">lib.showTextUI · interaction hints</div>
+
+  <div class="textui"><span class="key">E</span><span class="textui__text">Fuel vehicle</span></div>
+
+  <div class="textui"><div class="textui__icon"><i class="fa-solid fa-hand"></i></div><span class="textui__text">Pick apple</span></div>
+
+  <div class="textui"><span class="key">G</span><span class="textui__text">Open inventory</span></div>
+
+  <div class="textui"><div class="textui__icon"><i class="fa-solid fa-gas-pump"></i></div><span class="key">E</span><span class="textui__text">Refuel — <strong style="color:var(--mint)">$1.20</strong>/L</span></div>
+</body>
+</html>

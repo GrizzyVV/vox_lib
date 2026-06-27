@@ -1,0 +1,31 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · textui (divergent)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --panel:rgba(255,255,255,.035); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); padding:36px; min-height:100vh; display:flex; flex-direction:column; gap:14px; align-items:flex-start; }
+  .eyebrow { font-size:10px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:#5a6066; }
+
+  .chip { display:inline-flex; align-items:center; gap:11px; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:9px 14px 9px 11px; backdrop-filter:blur(8px); }
+  .key { display:inline-grid; place-items:center; min-width:24px; height:24px; padding:0 7px; background:rgba(240,69,78,.12); border:1px solid rgba(240,69,78,.5); border-radius:5px; font-weight:700; font-size:12px; color:var(--red); }
+  .ic { width:24px; height:24px; display:grid; place-items:center; color:var(--red); font-size:14px; }
+  .txt { font-size:12.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+  .txt .price { color:var(--red); }
+</style>
+</head>
+<body>
+  <div class="eyebrow">// lib.showTextUI — interaction hints</div>
+
+  <div class="chip"><span class="key">E</span><span class="txt">Fuel vehicle</span></div>
+  <div class="chip"><span class="ic"><i class="fa-solid fa-hand"></i></span><span class="txt">Pick apple</span></div>
+  <div class="chip"><span class="key">G</span><span class="txt">Open inventory</span></div>
+  <div class="chip"><span class="ic"><i class="fa-solid fa-gas-pump"></i></span><span class="key">E</span><span class="txt">Refuel — <span class="price">$1.20</span>/L</span></div>
+</body>
+</html>

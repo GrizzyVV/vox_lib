@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · weather sandbox</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Anton&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  body { display: flex; align-items: center; justify-content: flex-end; padding: 40px; }
+  .panel { width: 360px; background: var(--solid); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 24px 70px rgba(0,0,0,.6); overflow: hidden; display: none; }
+  .panel.in { display: block; }
+  .bar { height: 3px; background: var(--red-grad); }
+  .hd { padding: 18px 20px 6px; }
+  .hd .eyebrow { margin-bottom: 6px; }
+  .hd h1 { font-family: var(--display); font-size: 24px; letter-spacing: .02em; text-transform: uppercase; }
+  .hd .read { font-family: var(--mono); font-size: 12px; color: var(--copy); margin-top: 6px; }
+  .hd .read b { color: var(--red); font-weight: 400; }
+
+  .sec { padding: 14px 20px; border-top: 1px solid var(--line); }
+  .sec .lbl { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+
+  .timeval { font-family: var(--mono); font-size: 28px; color: var(--text); text-align: center; margin-bottom: 8px; }
+  input[type=range] { width: 100%; -webkit-appearance: none; height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--red); cursor: pointer; box-shadow: 0 0 0 4px rgba(240,69,78,.18); }
+  .quick { display: flex; gap: 6px; margin-top: 12px; }
+  .quick .vx-btn { flex: 1; padding: 8px 0; font-size: 10px; }
+
+  .toggle { display: flex; align-items: center; justify-content: space-between; }
+  .toggle .sw { width: 44px; height: 24px; border-radius: 999px; background: rgba(255,255,255,.12); position: relative; cursor: pointer; transition: background .15s; }
+  .toggle .sw.on { background: var(--red); }
+  .toggle .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .toggle .sw.on::after { left: 23px; }
+  .toggle .name { font-size: 12px; color: var(--copy); }
+
+  .wgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .wbtn { font-family: var(--ui); font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; padding: 9px 4px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--panel); color: var(--copy); cursor: pointer; transition: all .12s; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .wbtn i { font-size: 13px; }
+  .wbtn:hover { border-color: var(--line-2); color: var(--text); background: var(--panel-2); }
+  .wbtn.active { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+
+  .foot { padding: 12px 20px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .foot .hint { font-size: 10px; color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="panel" id="panel">
+  <div class="bar"></div>
+  <div class="hd">
+    <div class="eyebrow">vox_lib · world sandbox</div>
+    <h1>Weather</h1>
+    <div class="read">NOW &nbsp; <b id="rTime">--:--</b> &nbsp;·&nbsp; <b id="rWeather">—</b></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Time of day</div>
+    <div class="timeval" id="tdisp">12:00</div>
+    <input type="range" id="tslider" min="0" max="2400" step="15" value="1200" />
+    <div class="quick">
+      <button class="vx-btn" data-t="600">Dawn</button>
+      <button class="vx-btn" data-t="1200">Noon</button>
+      <button class="vx-btn" data-t="1900">Dusk</button>
+      <button class="vx-btn" data-t="0">Night</button>
+    </div>
+  </div>
+
+  <div class="sec toggle">
+    <span class="name">Animate clock (day/night cycle)</span>
+    <div class="sw" id="anim"></div>
+  </div>
+
+  <div class="sec">
+    <div class="lbl">Weather</div>
+    <div class="wgrid" id="wgrid"></div>
+  </div>
+
+  <div class="foot">
+    <span class="hint">/weather · [Esc] close</span>
+    <button class="vx-btn vx-btn--primary" id="close">Done</button>
+  </div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var WEATHER = [
+      { k: "ClearSkies", i: "sun", n: "Clear" }, { k: "PartlyCloudy", i: "cloud-sun", n: "Partly" },
+      { k: "Cloudy", i: "cloud", n: "Cloudy" }, { k: "Overcast", i: "smog", n: "Overcast" },
+      { k: "Foggy", i: "water", n: "Foggy" }, { k: "RainLight", i: "cloud-rain", n: "Drizzle" },
+      { k: "Rain", i: "cloud-showers-heavy", n: "Rain" }, { k: "RainThunderstorm", i: "cloud-bolt", n: "Storm" },
+      { k: "SnowLight", i: "snowflake", n: "Snow Lt" }, { k: "Snow", i: "snowflake", n: "Snow" },
+      { k: "SnowBlizzard", i: "wind", n: "Blizzard" }, { k: "SandDustCalm", i: "mound", n: "Dust" },
+      { k: "SandDustStorm", i: "tornado", n: "Sandstorm" }
+    ];
+    var panel = document.getElementById("panel"), tslider = document.getElementById("tslider"),
+        tdisp = document.getElementById("tdisp"), anim = document.getElementById("anim"),
+        wgrid = document.getElementById("wgrid"), rTime = document.getElementById("rTime"),
+        rWeather = document.getElementById("rWeather");
+    var open = false;
+
+    function emit(name, data) { if (typeof hEvent === "function") hEvent(name, data || {}); }
+    function fmt(v) { v = Math.round(v); var h = Math.floor(v / 100), m = v % 100; return (h < 10 ? "0" + h : h) + ":" + (m < 10 ? "0" + m : m); }
+
+    // build weather buttons
+    WEATHER.forEach(function (w) {
+      var b = document.createElement("button");
+      b.className = "wbtn"; b.dataset.k = w.k;
+      b.innerHTML = '<i class="fa-solid fa-' + w.i + '"></i>' + w.n;
+      b.addEventListener("click", function () { setActiveWeather(w.k); emit("setWeather", { weather: w.k }); });
+      wgrid.appendChild(b);
+    });
+    function setActiveWeather(k) {
+      rWeather.textContent = (WEATHER.find(function (w) { return w.k === k; }) || {}).n || k;
+      [].forEach.call(wgrid.children, function (b) { b.classList.toggle("active", b.dataset.k === k); });
+    }
+
+    // time slider
+    function onTime(v, push) { tdisp.textContent = fmt(v); rTime.textContent = fmt(v); if (push) emit("setTime", { time: Math.round(v) }); }
+    tslider.addEventListener("input", function () { onTime(+tslider.value, false); });
+    tslider.addEventListener("change", function () { onTime(+tslider.value, true); });
+    [].forEach.call(document.querySelectorAll(".quick .vx-btn"), function (b) {
+      b.addEventListener("click", function () { tslider.value = b.dataset.t; onTime(+b.dataset.t, true); });
+    });
+
+    // animate toggle
+    anim.addEventListener("click", function () { var on = !anim.classList.contains("on"); anim.classList.toggle("on", on); emit("setAnimate", { on: on }); });
+
+    document.getElementById("close").addEventListener("click", function () { emit("close", {}); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && open) emit("close", {}); });
+
+    function show(state) {
+      open = true; panel.classList.add("in");
+      if (state) {
+        if (typeof state.time === "number") { tslider.value = state.time; onTime(state.time, false); }
+        if (state.weather) setActiveWeather(state.weather);
+        anim.classList.toggle("on", !!state.animate);
+      }
+    }
+    function hide() { open = false; panel.classList.remove("in"); }
+
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "menu:show") show(m.args && m.args[0]);
+      else if (m.name === "menu:hide") hide();
+      else if (m.name === "menu:state") { var s = m.args && m.args[0]; if (s) { if (typeof s.time === "number") { tslider.value = s.time; onTime(s.time, false); } if (s.weather) setActiveWeather(s.weather); anim.classList.toggle("on", !!s.animate); } }
+    });
+
+    setTimeout(function () { emit("Ready", {}); }, 80);
+    window.__voxWeatherMenu = { show: show, hide: hide };
+    if (location.hash === "#preview") { document.body.style.background = "#0A0A0A"; show({ time: 1430, weather: "Rain", animate: false }); }
+  })();
+</script>
+</body>
+</html>

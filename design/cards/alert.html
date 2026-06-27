@@ -1,0 +1,50 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · alertDialog</title>
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root {
+    --mint: #04FFD1; --modal: #161616; --surface: #1E1E24; --line: #28282A; --text: #EDEDED; --copy: #B5B5B6;
+    --font-ui: 'Geist','Inter',sans-serif; --font-body: 'Inter',sans-serif; --chamfer: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0A0A0A; font-family: var(--font-body); color: var(--text); min-height: 100vh; }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(2px); display: grid; place-items: center; }
+
+  .dialog {
+    width: 380px; background: var(--modal); border: 1px solid var(--line);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, 0 100%);
+    box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  }
+  .dialog__header { font-family: var(--font-ui); font-weight: 600; font-size: 16px; color: var(--text); padding: 18px 20px 0; }
+  .dialog__accent { height: 2px; width: 40px; background: var(--mint); margin: 10px 20px 0; }
+  .dialog__body { padding: 14px 20px 20px; font-size: 14px; line-height: 1.5; color: var(--copy); }
+  .dialog__body strong { color: var(--text); }
+  .dialog__actions { display: flex; justify-content: flex-end; gap: 10px; padding: 0 20px 20px; }
+
+  .btn { font-family: var(--font-ui); font-weight: 550; font-size: 13px; padding: 9px 18px; cursor: pointer; border: 1px solid transparent; }
+  .btn--ghost { background: transparent; border-color: var(--line); color: var(--copy); border-radius: 4px; }
+  .btn--primary {
+    background: var(--mint); color: #000; border-radius: 4px;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%);
+  }
+</style>
+</head>
+<body>
+  <div class="backdrop">
+    <div class="dialog">
+      <div class="dialog__header">Delete vehicle?</div>
+      <div class="dialog__accent"></div>
+      <div class="dialog__body">This will permanently remove <strong>Sultan RS</strong> from your garage. <br>This action <strong>cannot be undone</strong>.</div>
+      <div class="dialog__actions">
+        <button class="btn btn--ghost">Cancel</button>
+        <button class="btn btn--primary">CONFIRM</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

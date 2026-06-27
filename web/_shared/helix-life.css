@@ -1,0 +1,43 @@
+/* helix-life.css — vox_lib functional UI shared stylesheet (Kit B, blessed "HELIX-Life" language).
+   Tokens + common atoms reused by every vox_lib WebUI component page so the tier is visually consistent.
+   Authentic HELIX-Life: Tomorrow (UI) + Anton (display, free Tungsten substitute), red accent, rounded translucent
+   panels, // EYEBROW tags, uppercase. Fonts load from Google Fonts CDN (the in-engine WebUI CEF has internet;
+   self-hosting is only needed for Claude Design previews, which use the design-divergent/ copies). */
+
+:root {
+  --red: #F0454E; --red-soft: rgba(240, 69, 78, .12); --red-line: rgba(240, 69, 78, .5); --red-grad: linear-gradient(180deg, #F0454E 0%, #C9333B 100%);
+  --bg: #0A0A0A; --panel: rgba(255, 255, 255, .035); --panel-2: rgba(255, 255, 255, .06); --solid: #141414;
+  --line: rgba(255, 255, 255, .10); --line-2: rgba(255, 255, 255, .16);
+  --text: #F4F5F7; --copy: #9aa0a6; --dim: #5a6066;
+  --ok: #36D399; --warn: #F0A847;
+  --ui: 'Tomorrow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --display: 'Anton', var(--ui); --mono: 'JetBrains Mono', monospace;
+  --r: 10px; --r-sm: 6px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; font-family: var(--ui); color: var(--text); -webkit-font-smoothing: antialiased; }
+
+/* atoms */
+.eyebrow { font-size: 10px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--dim); }
+.eyebrow::before { content: "// "; color: var(--red); }
+
+.vx-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); backdrop-filter: blur(12px); box-shadow: 0 10px 40px rgba(0, 0, 0, .5); }
+.vx-panel--solid { background: var(--solid); }
+
+.vx-key { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; background: var(--red-soft); border: 1px solid var(--red-line); border-radius: var(--r-sm); font-weight: 700; font-size: 11px; color: var(--red); font-family: var(--ui); }
+
+.vx-btn { font-family: var(--ui); font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; padding: 10px 18px; border-radius: var(--r-sm); border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text); cursor: pointer; transition: background .15s, border-color .15s, transform .05s; }
+.vx-btn:hover { background: rgba(255, 255, 255, .10); border-color: var(--line-2); }
+.vx-btn:active { transform: translateY(1px); }
+.vx-btn--primary { background: var(--red-grad); border-color: transparent; color: #fff; }
+.vx-btn--primary:hover { filter: brightness(1.08); background: var(--red-grad); }
+
+.vx-title { font-family: var(--display); font-weight: 400; letter-spacing: .01em; text-transform: uppercase; color: var(--text); }
+
+/* shared enter/exit */
+.vx-fade { opacity: 0; transition: opacity .18s ease, transform .18s ease; }
+.vx-fade.in { opacity: 1; }
+
+/* minimal markdown helpers (strong/key) — JS injects these classes */
+.md strong { color: var(--text); font-weight: 700; }

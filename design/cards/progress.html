@@ -1,0 +1,54 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · progress</title>
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root {
+    --mint: #04FFD1; --mint-deep: #003032; --surface: #1E1E24; --line: #28282A; --text: #EDEDED; --copy: #B5B5B6;
+    --font-ui: 'Geist','Inter',sans-serif; --font-body: 'Inter',sans-serif; --chamfer: 8px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0A0A0A; font-family: var(--font-body); color: var(--text); padding: 40px; min-height: 100vh; display: flex; flex-direction: column; gap: 28px; align-items: center; }
+  .label { font-family: var(--font-ui); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #6b6b70; align-self: flex-start; }
+
+  /* progressBar — a bottom-anchored bar with centered label */
+  .pbar {
+    position: relative; width: 320px; height: 38px; background: var(--surface); border: 1px solid var(--line);
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--chamfer)), calc(100% - var(--chamfer)) 100%, 0 100%);
+    box-shadow: 0 6px 24px rgba(0,0,0,.45); overflow: hidden;
+  }
+  .pbar__fill { position: absolute; inset: 0; width: var(--pct,60%); background: linear-gradient(90deg, var(--mint-deep), rgba(4,255,209,.22)); border-right: 2px solid var(--mint); }
+  .pbar__label { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-ui); font-weight: 500; font-size: 13px; letter-spacing: .02em; color: var(--text); }
+
+  /* progressCircle — SVG ring with centered label */
+  .pcircle { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .pcircle svg { transform: rotate(-90deg); }
+  .pcircle__track { fill: none; stroke: var(--line); stroke-width: 8; }
+  .pcircle__fill  { fill: none; stroke: var(--mint); stroke-width: 8; stroke-linecap: round; }
+  .pcircle__pct { font-family: var(--font-ui); font-weight: 600; font-size: 18px; fill: var(--text); }
+  .pcircle__label { font-family: var(--font-body); font-size: 13px; color: var(--copy); }
+</style>
+</head>
+<body>
+  <div class="label">lib.progressBar</div>
+  <div class="pbar">
+    <div class="pbar__fill" style="--pct:62%"></div>
+    <div class="pbar__label">Drinking water</div>
+  </div>
+
+  <div class="label">lib.progressCircle</div>
+  <div class="pcircle">
+    <svg width="120" height="120" viewBox="0 0 120 120" style="transform:rotate(-90deg)">
+      <circle class="pcircle__track" cx="60" cy="60" r="52"></circle>
+      <!-- 72% of circumference (2*pi*52 = 326.7); dash = 0.72*326.7 = 235.2 -->
+      <circle class="pcircle__fill" cx="60" cy="60" r="52" stroke-dasharray="235.2 326.7"></circle>
+      <text class="pcircle__pct" x="60" y="60" text-anchor="middle" dominant-baseline="central" transform="rotate(90 60 60)">72%</text>
+    </svg>
+    <div class="pcircle__label">Lockpicking…</div>
+  </div>
+</body>
+</html>

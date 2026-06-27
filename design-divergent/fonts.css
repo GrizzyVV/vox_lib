@@ -1,0 +1,14 @@
+/* HELIX real-site font stack (helixgame.com): Tomorrow (UI), Anton/Oswald (display ≈ Tungsten substitute), JetBrains Mono.
+   Self-hosted (Claude Design blocks external font CDNs). All SIL OFL. */
+
+@font-face { font-family:'Tomorrow'; font-style:normal; font-weight:400; font-display:swap; src:url('fonts/tomorrow-400.woff2') format('woff2'); }
+@font-face { font-family:'Tomorrow'; font-style:normal; font-weight:500; font-display:swap; src:url('fonts/tomorrow-500.woff2') format('woff2'); }
+@font-face { font-family:'Tomorrow'; font-style:normal; font-weight:600; font-display:swap; src:url('fonts/tomorrow-600.woff2') format('woff2'); }
+@font-face { font-family:'Tomorrow'; font-style:normal; font-weight:700; font-display:swap; src:url('fonts/tomorrow-700.woff2') format('woff2'); }
+
+/* Display — Anton (heavy condensed caps; the Tungsten stand-in) */
+@font-face { font-family:'Anton'; font-style:normal; font-weight:400; font-display:swap; src:url('fonts/anton-400.woff2') format('woff2'); }
+/* Oswald 700 — alternate condensed display */
+@font-face { font-family:'Oswald'; font-style:normal; font-weight:700; font-display:swap; src:url('fonts/oswald-700.woff2') format('woff2'); }
+
+@font-face { font-family:'JetBrains Mono'; font-style:normal; font-weight:400; font-display:swap; src:url('fonts/jbmono-400.woff2') format('woff2'); }

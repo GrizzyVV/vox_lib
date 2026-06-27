@@ -1,0 +1,61 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · menu</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --mint:#04FFD1; --surface:#1E1E24; --raise:#26262d; --line:#28282A; --text:#EDEDED; --copy:#B5B5B6; --muted:#6b6b70;
+    --font-ui:'Geist','Inter',sans-serif; --font-body:'Inter',sans-serif; --chamfer:8px; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--font-body); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:30px; }
+  .menu { width:290px; background:var(--surface); border:1px solid var(--line);
+    clip-path:polygon(0 0,100% 0,100% calc(100% - var(--chamfer)),calc(100% - var(--chamfer)) 100%,0 100%);
+    box-shadow:0 20px 50px rgba(0,0,0,.55); overflow:hidden; }
+  .menu__title { font-family:var(--font-ui); font-weight:600; font-size:14px; padding:13px 16px; border-bottom:1px solid var(--line); }
+  .item { display:flex; align-items:center; gap:11px; padding:11px 16px; font-size:13.5px; }
+  .item--sel { background:var(--raise); border-left:3px solid var(--mint); padding-left:13px; }
+  .item__icon { width:20px; text-align:center; color:var(--mint); font-size:13px; }
+  .item__label { font-family:var(--font-ui); font-weight:500; flex:1 1 auto; }
+  .check { width:18px; height:18px; border-radius:4px; border:1px solid var(--line); display:grid; place-items:center; font-size:10px; }
+  .check.on { background:var(--mint); border-color:var(--mint); color:#000; }
+  .scroll { display:flex; align-items:center; gap:10px; color:var(--text); font-family:var(--font-body); }
+  .scroll i { color:var(--mint); font-size:11px; cursor:pointer; }
+  .scroll .val { min-width:54px; text-align:center; font-size:13px; }
+  .hint { padding:9px 16px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; display:flex; gap:14px; }
+  .hint b { color:var(--copy); font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="menu">
+    <div class="menu__title">Settings</div>
+
+    <div class="item item--sel">
+      <span class="item__icon"><i class="fa-solid fa-gauge-high"></i></span>
+      <span class="item__label">Render distance</span>
+      <span class="scroll"><i class="fa-solid fa-chevron-left"></i><span class="val">High</span><i class="fa-solid fa-chevron-right"></i></span>
+    </div>
+
+    <div class="item">
+      <span class="item__icon"><i class="fa-solid fa-eye"></i></span>
+      <span class="item__label">Show HUD</span>
+      <span class="check on"><i class="fa-solid fa-check"></i></span>
+    </div>
+
+    <div class="item">
+      <span class="item__icon"><i class="fa-solid fa-skull"></i></span>
+      <span class="item__label">Difficulty</span>
+      <span class="scroll"><i class="fa-solid fa-chevron-left"></i><span class="val">Normal</span><i class="fa-solid fa-chevron-right"></i></span>
+    </div>
+
+    <div class="item">
+      <span class="item__icon"><i class="fa-solid fa-rotate-left"></i></span>
+      <span class="item__label">Reset to default</span>
+    </div>
+
+    <div class="hint"><span><b>↑↓</b> navigate</span><span><b>↵</b> select</span><span><b>⌫</b> back</span></div>
+  </div>
+</body>
+</html>

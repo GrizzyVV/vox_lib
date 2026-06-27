@@ -1,0 +1,56 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · progress (divergent)</title>
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --panel:rgba(255,255,255,.035); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; --disp:'Anton',sans-serif; --mono:'JetBrains Mono',monospace; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); min-height:100vh; display:flex; flex-direction:column; gap:24px; align-items:center; justify-content:center; padding:34px; }
+
+  .panel { width:400px; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; backdrop-filter:blur(10px); }
+  .row { display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; }
+  .lbl { font-size:11px; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--copy); }
+  .lbl b { color:var(--red); }
+  .pct { font-family:var(--mono); font-size:15px; font-weight:600; color:var(--text); }
+  .segs { display:flex; gap:3px; }
+  .segs i { flex:1; height:13px; background:rgba(255,255,255,.06); border-radius:2px; }
+  .segs i.on { background:var(--red); box-shadow:0 0 8px rgba(240,69,78,.5); }
+
+  .ringwrap { display:flex; align-items:center; gap:20px; }
+  .ring svg { transform:rotate(-90deg); }
+  .ring .tk { fill:none; stroke:rgba(255,255,255,.08); stroke-width:7; }
+  .ring .fl { fill:none; stroke:var(--red); stroke-width:7; stroke-linecap:round; }
+  .ring .pc { font-family:var(--mono); font-weight:600; font-size:16px; fill:var(--text); }
+  .ringmeta .e { font-size:9.5px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--red); }
+  .ringmeta .t { font-family:var(--disp); font-size:24px; text-transform:uppercase; line-height:1; margin-top:4px; }
+</style>
+</head>
+<body>
+  <div class="panel">
+    <div class="row"><span class="lbl"><b>//</b> Drinking water</span><span class="pct">62%</span></div>
+    <div class="segs" id="s1"></div>
+  </div>
+
+  <div class="panel">
+    <div class="ringwrap">
+      <div class="ring">
+        <svg width="92" height="92" viewBox="0 0 92 92">
+          <circle class="tk" cx="46" cy="46" r="40"></circle>
+          <circle class="fl" cx="46" cy="46" r="40" stroke-dasharray="221 251" ></circle>
+          <text class="pc" x="46" y="46" text-anchor="middle" dominant-baseline="central" transform="rotate(90 46 46)">88%</text>
+        </svg>
+      </div>
+      <div class="ringmeta"><div class="e">// In progress</div><div class="t">Lockpick</div></div>
+    </div>
+  </div>
+
+<script>
+  function fill(id,p,n){const e=document.getElementById(id),o=Math.round(p/100*n);for(let i=0;i<n;i++){const s=document.createElement('i');if(i<o)s.className='on';e.appendChild(s);}}
+  fill('s1',62,20);
+</script>
+</body>
+</html>

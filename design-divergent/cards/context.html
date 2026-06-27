@@ -1,0 +1,56 @@
+<!-- @dsCard group="Interface" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · context (divergent)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="stylesheet" href="../fonts.css" />
+<style>
+  :root { --red:#F0454E; --panel:rgba(255,255,255,.035); --raise:rgba(255,255,255,.06); --line:rgba(255,255,255,.10); --text:#F4F5F7; --copy:#9aa0a6;
+    --ui:'Tomorrow',sans-serif; --disp:'Anton',sans-serif; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0A0A0A; font-family:var(--ui); color:var(--text); min-height:100vh; display:grid; place-items:center; padding:30px; }
+  .menu { width:300px; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; backdrop-filter:blur(10px); }
+  .head { padding:14px 16px 12px; border-bottom:1px solid var(--line); }
+  .eyebrow { font-size:9.5px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--red); }
+  .title { font-family:var(--disp); font-size:23px; text-transform:uppercase; line-height:1; margin-top:4px; }
+
+  .item { display:flex; gap:12px; align-items:flex-start; padding:11px 16px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .item:last-child { border-bottom:none; }
+  .item--active { background:var(--raise); box-shadow:inset 3px 0 0 var(--red); }
+  .item--disabled { opacity:.4; }
+  .ic { width:22px; flex:0 0 auto; text-align:center; color:var(--copy); font-size:14px; margin-top:1px; }
+  .item--active .ic { color:var(--red); }
+  .b { flex:1 1 auto; min-width:0; }
+  .t { font-size:12.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; }
+  .d { font-size:11.5px; color:var(--copy); margin-top:2px; }
+  .arrow { color:var(--red); align-self:center; font-size:11px; }
+  .bar { height:4px; background:rgba(255,255,255,.07); border-radius:2px; margin-top:7px; overflow:hidden; }
+  .bar>span { display:block; height:100%; background:var(--red); }
+</style>
+</head>
+<body>
+  <div class="menu">
+    <div class="head"><div class="eyebrow">// Interact</div><div class="title">Vehicle</div></div>
+
+    <div class="item item--active">
+      <div class="ic"><i class="fa-solid fa-lock"></i></div>
+      <div class="b"><div class="t">Lock doors</div><div class="d">Toggle the vehicle locks</div></div>
+    </div>
+    <div class="item">
+      <div class="ic"><i class="fa-solid fa-gas-pump"></i></div>
+      <div class="b"><div class="t">Fuel</div><div class="d">68% remaining</div><div class="bar"><span style="width:68%"></span></div></div>
+    </div>
+    <div class="item item--disabled">
+      <div class="ic"><i class="fa-solid fa-hand"></i></div>
+      <div class="b"><div class="t">Impound</div><div class="d">Requires police access</div></div>
+    </div>
+    <div class="item">
+      <div class="ic"><i class="fa-solid fa-box-archive"></i></div>
+      <div class="b"><div class="t">Storage</div><div class="d">Open trunk &amp; glovebox</div></div>
+      <div class="arrow"><i class="fa-solid fa-chevron-right"></i></div>
+    </div>
+  </div>
+</body>
+</html>
