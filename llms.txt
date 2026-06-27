@@ -1,0 +1,23 @@
+# vox_lib
+
+> A free, HELIX-native UI + utility library for HELIX (UE5) — a clean-room equivalent of the ox_lib `lib.*` contract that FiveM resources expect. Provides UI (notify, text UI, dialogs, menus, progress, skill check, radial), cinematic control (weather/time/freecam), a character creator over HELIX's native cosmetics, entity spawning, and the foundation utilities — all on one global `lib` table.
+
+vox_lib loads into a consumer's own Lua state because HELIX packages are sandboxed and functions don't cross the package boundary — so it is used either as a standalone package or source-bundled, never via `exports`. The deployable resource is the `vox_lib/` folder. For agent navigation + a module map, start with AGENTS.md.
+
+## Documentation
+- [README](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/README.md): overview, install, quick start, component catalog
+- [AGENTS.md](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/AGENTS.md): codebase navigation + per-module map for agents
+- [Developer reference](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/docs/developer.md): the full `lib.*` API — every function, its options, and examples
+- [How it works](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/docs/tech.md): runtime model, the WebUI reverse channel, the scheduler, the cinematic + entity layers
+
+## Source (the resource)
+- [init.lua](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/vox_lib/init.lua): creates the global `lib` table (loads first)
+- [package.json](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/vox_lib/package.json): the canonical module load order
+- [modules/](https://github.com/GrizzyVV/vox_lib-HELIX-/tree/main/vox_lib/modules): one Lua file per capability; each attaches to `lib`
+- [web/](https://github.com/GrizzyVV/vox_lib-HELIX-/tree/main/vox_lib/web): the WebUI pages for the visual components (shared theme in `web/_shared/helix-life.css`)
+
+## Key concepts
+- Load model: source-bundled or standalone; everything attaches to the global `lib` (no `exports` — functions don't cross HELIX's package boundary).
+- WebUI reverse channel: Lua→page via `SendEvent` (`{name, args}` envelope), page→Lua via `hEvent(name, data)`.
+- Return-value calls (`alertDialog`/`inputDialog`/`progressBar`/`skillCheck`) yield — call them from inside a thread.
+- Load order: `init.lua` → `class.lua` → rest (see `vox_lib/package.json`).
