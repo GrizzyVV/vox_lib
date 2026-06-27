@@ -6,7 +6,12 @@ inputDialog, progressBar/Circle, skillCheck) **yield** — call them from inside
 - [UI](#ui)
 - [Cinematic — weather / sky / time / freecam](#cinematic)
 - [Character Creator — appearance](#character-creator)
-- [Entities — spawning](#entities)
+- [Entities — spawning / vehicles / peds / attach](#entities)
+- [Animations](#animations)
+- [Raycast](#raycast)
+- [World — worldToScreen / markers](#world)
+- [Zones & points](#zones--points)
+- [Screen fade](#screen-fade)
 - [Foundation](#foundation)
 
 ---
@@ -243,26 +248,92 @@ yaw number, or `{pitch=,yaw=,roll=}`.
 |---|---|
 | `lib.spawnVehicle(asset, coords, heading?, opts?)` → vehicle\|nil | Spawn a vehicle. `asset` = vehicle Blueprint path. `opts = { plate=, tags={} }`. |
 | `lib.spawnObject(class, coords, rotation?, opts?)` → actor\|nil | Spawn any actor. `class` = a UClass or a class-path string. `opts = { tags={} }`. |
-| `lib.deleteEntity(entity)` → boolean | Destroy a spawned actor. |
+| `lib.spawnPed(coords, rotation?, opts?, cb?)` | Spawn an NPC via `HPawn` (**async** — `cb(pawn)`). `opts = { name=, nameplate=, invincible=, frozen=, tags={} }`. |
+| `lib.exitVehicle(pawn, opts?)` → result | Eject a pawn from its vehicle (`opts = { skipAnimations=true }`). |
+| `lib.ejectAll(vehicle, opts?)` → result | Eject every occupant (iterates `SeatOccupancy`). |
+| `lib.warpIntoVehicle(pawn, _, _, opts?)` → result | ⚠️ Sends the enter-vehicle intent (specific-vehicle targeting unverified — see note). |
+| `lib.attachEntity(child, parent, rule?)` / `lib.detachEntity(child)` | Attach/detach actors. `rule = "snap"\|"keepWorld"\|"keepRelative"`. |
+| `lib.getVehiclePlate/Fuel/EngineHealth(v)` · `lib.setVehicleFuel/Plate(v, x)` | Read/write vehicle state (accepts an HVehicle or a raw actor — auto-wraps). |
+| `lib.deleteEntity(entity, ejectFirst?)` → boolean | Destroy a spawned actor; `ejectFirst=true` ejects occupants first. |
 
 ```lua
 -- vehicle (asset path comes from your vehicle catalog, e.g. qb-core Shared.Vehicles[model].asset_name)
 local car = lib.spawnVehicle("/HelixVehicles/Blueprints/Cars/H1/BP_H1.BP_H1_C",
     { x = 569462, y = 562978, z = 4574 }, 90, { plate = "VOX 001" })
 
--- generic actor
-local cam = lib.spawnObject("/Script/Engine.CameraActor", coords, { yaw = 180 })
+lib.spawnPed(coords, 0, { name = "Clerk", nameplate = true }, function(npc) print("spawned", npc) end)
 
-lib.deleteEntity(car)
+lib.exitVehicle(GetPlayerPawn())          -- clean eject (no more stranded seated pose)
+lib.deleteEntity(car, true)               -- eject occupants, then destroy
 ```
 
-> **⚠️ Don't delete an occupied vehicle.** Destroying a vehicle while a player is seated leaves them stuck in the seated pose
-> (the seat link dangles — there's no character-level `ExitVehicle` to recover cleanly; a relog resets it). Empty/eject the
-> vehicle before `deleteEntity`.
+> **✅ Stranded-vehicle fixed.** `lib.exitVehicle` / `lib.ejectAll` cleanly remove occupants via the engine's
+> `SendExitVehicleEventToActor` — so `lib.deleteEntity(vehicle, true)` no longer strands the player. (`warpIntoVehicle` fires the
+> enter intent but the current build's `FHEnterVehicleParams` carries only `bSkipAnimations`, so targeting a *specific* vehicle/seat
+> isn't yet expressible — it likely enters the nearest vehicle. Probe pending.)
 
 > **Exposing as a cross-package export** is a one-liner in your resource:
 > `exports("myresource", "SpawnVehicle", lib.spawnVehicle)` — then `exports["myresource"]:SpawnVehicle(...)` from anywhere.
 > (vox_lib itself is source-bundled, so it doesn't register exports for you — you choose what to expose.)
+
+---
+
+## Animations
+
+`lib.playAnim(pawn, animPath, opts?)` / `lib.stopAnim(pawn)` over the HELIX `Animation` global (montages). **Client-side.**
+`animPath` is the animation **asset path** (e.g. `/HelixAnimation/Unified/Animations/Actions/A_Action_Wave.A_Action_Wave`).
+`opts = { loop=bool, slot="FullBody"|"UpperBody", blendIn=sec, blendOut=sec, playRate=number, onComplete=fn }`.
+
+**Blending/interpolation is supported** (probe-verified): `blendIn`/`blendOut` crossfade the transition between poses/animations,
+so going from anim A → anim B is smooth rather than a snap; playing a new anim on the same `slot` blends the old one out.
+`playRate` scales speed. (Parametric blend-spaces — walk↔run by speed — are a separate anim-BP mechanism, not exposed here.)
+
+```lua
+CreateThread(function()
+    lib.playAnim(pawn, "/HelixAnimation/Unified/Animations/Actions/A_Action_Wave.A_Action_Wave", { blendIn = 0.3 })
+    Wait(2000)
+    lib.playAnim(pawn, dancePath, { loop = true, blendIn = 0.5 })   -- crossfades wave → dance
+    Wait(5000)
+    lib.stopAnim(pawn)                                              -- blends back to base pose
+end)
+```
+
+## Raycast
+
+`lib.raycast(startCoords, endCoords, opts?)` and `lib.raycastFromCamera(opts?)` (default = screen centre). **Client-side.**
+Returns `{ ok, hit=bool, result={ location, normal, actor, distance } }`. `opts = { ignore={actors}, complex=bool, x=, y=, distance= }`.
+```lua
+local hit = lib.raycastFromCamera({ distance = 50000 })
+if hit.hit then print("looking at", hit.result.actor, hit.result.location) end
+```
+
+## World
+
+`lib.worldToScreen(coords)` → `{ ok, onScreen, x, y }` (x,y as 0-1 screen fractions) — the primitive for in-world labels.
+`lib.spawnMarker(coords, opts?)` → mesh — a marker is a real `StaticMesh` (remove with `lib.deleteEntity`). `opts = { asset=, scale=, rotation=, collision= }`.
+
+## Zones & points
+
+Spatial triggers (the ox_lib points/zones contract), pure-Lua over one shared tick loop. **Client-side.**
+- `lib.points.new{ coords=, distance=, onEnter=, onExit=, inside=, nearby=, nearDistance= }`
+- `lib.zones.sphere{ coords=, radius=, onEnter=, onExit=, inside= }`
+- `lib.zones.box{ coords=, size={x,y,z}, rotation=yawDeg, onEnter=, onExit=, inside= }`
+
+Each returns a handle with `:remove()`. `onEnter`/`onExit` fire on transition; `inside` fires every tick while inside. `lib.removeAllZones()` clears all.
+```lua
+local z = lib.zones.sphere{ coords = shopCoords, radius = 250,
+    onEnter = function() lib.showTextUI("[E] Shop") end,
+    onExit  = function() lib.hideTextUI() end }
+-- z.remove()
+```
+
+## Screen fade
+
+`lib.fadeOut(durationMs?)` / `lib.fadeIn(durationMs?)` / `lib.isScreenFaded()`. **Client-side.** A WebUI black overlay
+(the engine's `DoScreenFade*` globals were removed on the current build, so vox_lib owns this).
+```lua
+CreateThread(function() lib.fadeOut(800); Wait(800); doTeleport(); lib.fadeIn(800) end)
+```
 
 ---
 

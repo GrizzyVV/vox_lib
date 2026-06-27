@@ -45,7 +45,13 @@ state** and attach to the global `lib`. Two supported ways to use it, both endin
   share the `runTween` helper)
 - `freecam.lua` → detached cinematic camera
 - `charcreator.lua` → `lib.openCharacterCreator` / `getAppearance` / `applyAppearance` (wraps HELIX's native cosmetics)
-- `entity.lua` → `lib.spawnVehicle` / `spawnObject` / `deleteEntity`
+- `entity.lua` → `lib.spawnVehicle` / `spawnObject` / `spawnPed` / `exitVehicle` / `ejectAll` / `warpIntoVehicle` /
+  `attachEntity` / `detachEntity` / vehicle getters / `deleteEntity`
+- `anim.lua` → `lib.playAnim` / `stopAnim` (montages w/ blend; over `Animation.Play/Stop`)
+- `raycast.lua` → `lib.raycast` / `raycastFromCamera` (`UE.UKismetSystemLibrary.LineTraceSingle` + deproject)
+- `world.lua` → `lib.worldToScreen` / `spawnMarker`
+- `zones.lua` → `lib.points` / `lib.zones.sphere` / `lib.zones.box` (pure-Lua tick loop; `lib.removeAllZones`)
+- `screenfade.lua` → `lib.fadeOut` / `fadeIn` / `isScreenFaded` (WebUI black overlay; `web/screenfade/`)
 
 ## Conventions
 - **WebUI events**: Lua→page via `SendEvent` (envelope `{ name, args:[payload] }`); page→Lua via `hEvent(name, data)` →

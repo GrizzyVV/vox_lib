@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<!-- vox_lib screen fade — a full-screen black overlay whose opacity is tweened on a `fade` event.
+     Receives the WebUI envelope { name, args:[{ state:'out'|'in', duration }] }. 'out' = fade TO black (opacity 0->1);
+     'in' = fade FROM black (opacity 1->0). Pointer-events:none so it never steals input. -->
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+    #fade {
+      position: fixed; inset: 0; background: #000; opacity: 0;
+      pointer-events: none; transition: opacity 500ms ease;
+    }
+  </style>
+</head>
+<body>
+  <div id="fade"></div>
+  <script>
+    var el = document.getElementById('fade');
+
+    function applyFade(state, duration) {
+      var ms = (typeof duration === 'number' && duration >= 0) ? duration : 500;
+      el.style.transition = 'opacity ' + ms + 'ms ease';
+      // next frame so the transition picks up the new duration before opacity flips
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          el.style.opacity = (state === 'out') ? '1' : '0';
+        });
+      });
+    }
+
+    function handle(name, payload) {
+      if (name !== 'fade' || !payload) return;
+      applyFade(payload.state, payload.duration);
+    }
+
+    // WebUI envelope: event.data = { name, args:[payload] }
+    window.addEventListener('message', function (e) {
+      var d = e.data;
+      if (d && typeof d === 'object' && 'name' in d) {
+        handle(d.name, Array.isArray(d.args) ? d.args[0] : d.args);
+      }
+    });
+
+    // #preview hash: render fully black for design work
+    if (location.hash === '#preview') { el.style.opacity = '1'; }
+  </script>
+</body>
+</html>

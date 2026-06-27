@@ -94,6 +94,25 @@ deleteEntity` wrap these with flexible coord/rotation inputs. A host framework m
 entity-registration event for a metadata/ownership layer — that's app bookkeeping, *not* required for the entity to exist or
 render, so vox_lib leaves it to the consumer.
 
+NPCs use the global `HPawn(pos, rot, callback, { CharacterName, bShowNameplate })` (async — the pawn arrives in the callback);
+vehicle occupancy is driven by `UE.UHGameplaySystemGlobals.Send{Exit,Enter}VehicleEventToActor(pawn, params)` — `lib.exitVehicle`
+/`ejectAll` use the exit event (which finally closes the "stranded seated pawn" problem deleteEntity used to warn about). Attach
+uses the `AttachActorToActor`/`DetachActor` globals + `UE.EAttachmentRule`.
+
+## Animation & spatial layer
+
+Animations ride the `Animation` global: `Animation.Play(pawn, animAssetPath, UE.FHPlayAnimParams, onDone)` / `Animation.Stop(pawn)`.
+`FHPlayAnimParams` (probe-verified fields) carries `LoopCount`, `AnimSlotName`, and the blend knobs `BlendInTime`/`BlendOutTime`
+plus `PlayRate` — so `lib.playAnim` crossfades between animations. Raycasting is `UE.UKismetSystemLibrary.LineTraceSingle` (+
+`UE.UGameplayStatics.DeprojectScreenToWorld` for the camera ray); `lib.worldToScreen` is `HPlayer:ProjectWorldLocationToScreen`.
+`lib.points`/`lib.zones` are deliberately **pure-Lua** (distance / point-in-box math on one `Timer.SetInterval` loop) rather than
+UE physics components — cheaper and portable. `lib.fadeOut/fadeIn` is a WebUI black overlay.
+
+**Build note (important):** the HELIX scripting API has TWO generations. An older build exposed FiveM-style global natives
+(`CreateThread`, `DoScreenFadeIn`, `FreezeEntityPosition`, …) that the **current** build dropped for cleaner idioms (`Timer.*`,
+`Animation.*`, WebUI overlay fade). vox_lib targets the **current** build — every API above is probe-verified on it (2026-06-27).
+That's why, e.g., screen fade is a WebUI overlay (the old `DoScreenFade*` globals no longer exist).
+
 ## Known deviations / limits
 
 - `lib.waitFor` returns `nil` on timeout (no throw — see halt-on-first-throw).

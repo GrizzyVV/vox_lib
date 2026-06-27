@@ -27,6 +27,11 @@
     "modules/weather.lua",
     "modules/freecam.lua",
     "modules/charcreator.lua",
-    "modules/entity.lua"
+    "modules/entity.lua",
+    "modules/anim.lua",
+    "modules/raycast.lua",
+    "modules/world.lua",
+    "modules/zones.lua",
+    "modules/screenfade.lua"
   ]
 }
