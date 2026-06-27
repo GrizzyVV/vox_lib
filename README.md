@@ -14,7 +14,7 @@ control and a cinematic freecam — all styled for HELIX and driven by a single 
 | **Cinematic** | weather (`SetWeather`/`InterpolateWeather`) · sky params (`SetSky`/`InterpolateSky` — eased fog/clouds/intensity) · time (`SetTime`/`InterpolateTime`) · `SetCinematicSky` · freecam (`StartFreeCam`/`ToggleFreeCam`) |
 | **Character** | character creator (`openCharacterCreator`) + appearance capture/persist/reapply (`getAppearance`/`applyAppearance`) over HELIX's native cosmetics |
 | **Entities** | spawn `spawnVehicle` · `spawnObject` · `spawnPed` · vehicle `exitVehicle`/`ejectAll`/`warpIntoVehicle` + getters · `attachEntity`/`detachEntity` · `deleteEntity` |
-| **Animation** | `playAnim` / `stopAnim` — montages with eased **blend** between animations (`blendIn`/`blendOut`/`playRate`) |
+| **Animation** | `playAnim` / `stopAnim` — montage wrapper over `Animation.Play` (⚠️ experimental — wired but not yet visually verified) |
 | **World / spatial** | `raycast` / `raycastFromCamera` · `worldToScreen` · `spawnMarker` · `lib.points` / `lib.zones` (box/sphere) · `fadeOut`/`fadeIn` |
 | **Foundation** | `lib.class` · `lib.table` · `lib.array` · `lib.string` · `lib.math` · `lib.cache` · `lib.print` · `lib.locale` · `lib.timer` · `lib.waitFor` · `lib.callback` · `lib.hook` |
 

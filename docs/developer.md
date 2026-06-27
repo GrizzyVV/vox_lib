@@ -287,13 +287,18 @@ lib.deleteEntity(car, true)               -- eject occupants, then destroy
 
 ## Animations
 
+> ⚠️ **NOT YET VISUALLY VERIFIED.** `lib.playAnim` wires the `Animation.Play` API and returns success, but **no visible
+> animation has been observed in testing** (a human watching the pawn saw nothing play). The wrapper is wired correctly to the
+> API hl-emotes uses, and the `FHPlayAnimParams` blend fields below are probe-confirmed to *exist* — but actually getting a
+> montage to render on a pawn is unresolved (likely needs a slot/anim-BP detail this wrapper is missing). **Treat as experimental
+> until confirmed playing in-world.**
+
 `lib.playAnim(pawn, animPath, opts?)` / `lib.stopAnim(pawn)` over the HELIX `Animation` global (montages). **Client-side.**
 `animPath` is the animation **asset path** (e.g. `/HelixAnimation/Unified/Animations/Actions/A_Action_Wave.A_Action_Wave`).
 `opts = { loop=bool, slot="FullBody"|"UpperBody", blendIn=sec, blendOut=sec, playRate=number, onComplete=fn }`.
 
-**Blending/interpolation is supported** (probe-verified): `blendIn`/`blendOut` crossfade the transition between poses/animations,
-so going from anim A → anim B is smooth rather than a snap; playing a new anim on the same `slot` blends the old one out.
-`playRate` scales speed. (Parametric blend-spaces — walk↔run by speed — are a separate anim-BP mechanism, not exposed here.)
+`FHPlayAnimParams` exposes `BlendInTime`/`BlendOutTime`/`PlayRate` (probe-confirmed fields), so blending between montages is
+*intended* once playback works. (Parametric blend-spaces — walk↔run by speed — are a separate anim-BP mechanism, not exposed here.)
 
 ```lua
 CreateThread(function()

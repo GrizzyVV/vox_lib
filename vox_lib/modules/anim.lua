@@ -1,4 +1,10 @@
 --[[ lib.playAnim / lib.stopAnim — play a montage animation on a pawn, with optional eased BLEND between animations.
+
+     ⚠️ EXPERIMENTAL — NOT VISUALLY VERIFIED (2026-06-27). Animation.Play returns success but no visible animation was observed
+     on a pawn when a human watched. The wrapper mirrors hl-emotes' usage and the FHPlayAnimParams blend fields are
+     probe-confirmed to exist, but actual on-pawn playback is unresolved (likely a slot / anim-BP / player-pawn detail). Don't
+     rely on this rendering until confirmed in-world.
+
      Built on the probe-verified HELIX `Animation` global: Animation.Play(pawn, animAssetPath, UE.FHPlayAnimParams, onDone) ->
      success ; Animation.Stop(pawn). CLIENT-side (animation is local render).
 
