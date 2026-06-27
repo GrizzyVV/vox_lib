@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · menu</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Anton&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  .menu { position: fixed; width: 300px; background: var(--solid); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6); overflow: hidden; display: none; }
+  .menu.in { display: block; }
+  .menu[data-pos="top-left"]     { top: 32px; left: 32px; }
+  .menu[data-pos="top-right"]    { top: 32px; right: 32px; }
+  .menu[data-pos="bottom-left"]  { bottom: 32px; left: 32px; }
+  .menu[data-pos="bottom-right"] { bottom: 32px; right: 32px; }
+  .menu__bar { height: 3px; background: var(--red-grad); }
+  .menu__title { font-family: var(--display); font-size: 17px; letter-spacing: .02em; text-transform: uppercase; padding: 13px 16px 10px; color: var(--text); }
+  .menu__list { max-height: 60vh; overflow-y: auto; padding: 4px 6px 8px; }
+  .mo { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 7px; border: 1px solid transparent; }
+  .mo.sel { background: var(--red-soft); border-color: var(--red); }
+  .mo__ic { width: 18px; text-align: center; color: var(--red); font-size: 13px; flex: 0 0 auto; }
+  .mo__body { flex: 1; min-width: 0; }
+  .mo__label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .mo__desc { font-size: 11px; color: var(--copy); margin-top: 2px; }
+  .mo__right { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+  .mo__val { font-family: var(--mono); font-size: 11.5px; color: var(--red); }
+  .mo__chev { color: var(--dim); font-size: 10px; }
+  .mo__check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line-2); display: grid; place-items: center; color: var(--red); font-size: 10px; }
+  .mo__check.on { border-color: var(--red); background: var(--red-soft); }
+  .mo__prog { height: 3px; border-radius: 999px; background: rgba(255,255,255,.1); margin-top: 6px; overflow: hidden; }
+  .mo__prog i { display: block; height: 100%; background: var(--red); }
+  .menu__hint { font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--dim); padding: 4px 16px 12px; }
+</style>
+</head>
+<body>
+<div class="menu" id="menu" data-pos="top-left">
+  <div class="menu__bar"></div>
+  <div class="menu__title vx-title" id="title">Menu</div>
+  <div class="menu__list" id="list"></div>
+  <div class="menu__hint">↑↓ navigate · ←→ change · Enter select · Esc close</div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var menu = document.getElementById("menu"), title = document.getElementById("title"), list = document.getElementById("list");
+    var open = false, opts = [], cur = 0, scroll = [], canClose = true;
+    function emit(n, d) { if (typeof hEvent === "function") hEvent(n, d || {}); }
+    function txt(s) { var d = document.createElement("div"); d.textContent = String(s == null ? "" : s); return d.innerHTML; }
+
+    function render() {
+      list.innerHTML = "";
+      opts.forEach(function (o, i) {
+        var row = document.createElement("div"); row.className = "mo" + (i === cur ? " sel" : "");
+        var ic = o.icon ? '<div class="mo__ic"><i class="fa-solid fa-' + o.icon + '"></i></div>' : "";
+        var right = "";
+        if (o.isCheck) right = '<div class="mo__right"><div class="mo__check' + (o.checked ? " on" : "") + '">' + (o.checked ? '<i class="fa-solid fa-check"></i>' : "") + '</div></div>';
+        else if (o.values && o.values.length) {
+          var sv = o.values[scroll[i] || 0]; var label = (sv && sv.label != null) ? sv.label : sv;
+          right = '<div class="mo__right"><span class="mo__chev">◄</span><span class="mo__val">' + txt(label) + '</span><span class="mo__chev">►</span></div>';
+        }
+        var prog = (typeof o.progress === "number") ? '<div class="mo__prog"><i style="width:' + o.progress + '%"></i></div>' : "";
+        row.innerHTML = ic + '<div class="mo__body"><div class="mo__label">' + txt(o.label) + '</div>' +
+          (o.description ? '<div class="mo__desc">' + txt(o.description) + '</div>' : "") + prog + '</div>' + right;
+        list.appendChild(row);
+      });
+    }
+    function move(d) { if (!opts.length) return; cur = (cur + d + opts.length) % opts.length; render(); }
+    function side(d) {
+      var o = opts[cur]; if (!o || !o.values || !o.values.length) return;
+      scroll[cur] = ((scroll[cur] || 0) + d + o.values.length) % o.values.length; render();
+      emit("menu:scroll", { index: cur + 1, scrollIndex: scroll[cur] + 1 });
+    }
+    function pick() {
+      var o = opts[cur]; if (!o) return;
+      if (o.isCheck) { o.checked = !o.checked; render(); emit("menu:check", { index: cur + 1, checked: o.checked }); }
+      else emit("menu:select", { index: cur + 1, scrollIndex: (scroll[cur] || 0) + 1 });
+    }
+
+    function show(d) {
+      d = d || {}; title.textContent = d.title || "Menu"; menu.setAttribute("data-pos", d.position || "top-left");
+      opts = d.options || []; cur = 0; scroll = opts.map(function () { return 0; }); canClose = d.canClose !== false;
+      render(); menu.classList.add("in"); open = true;
+    }
+    function hide() { open = false; menu.classList.remove("in"); }
+
+    document.addEventListener("keydown", function (e) {
+      if (!open) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); move(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); move(-1); }
+      else if (e.key === "ArrowRight") side(1);
+      else if (e.key === "ArrowLeft") side(-1);
+      else if (e.key === "Enter") pick();
+      else if (e.key === "Escape" || e.key === "Backspace") { if (canClose) emit("menu:close", { key: e.key }); }
+    });
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "menu:show") show(m.args && m.args[0]); else if (m.name === "menu:hide") hide();
+    });
+    setTimeout(function () { emit("Ready", {}); }, 80);
+    window.__voxMenu = show;
+    if (location.hash === "#preview") {
+      document.body.style.background = "#0A0A0A";
+      show({ title: "Settings", options: [
+        { index:1, label: "Volume", values: [{label:"Low"},{label:"Med"},{label:"High"}] },
+        { index:2, label: "Notifications", checked: true, isCheck: true },
+        { index:3, label: "Apply", icon: "check", description: "Save changes" },
+      ] });
+    }
+  })();
+</script>
+</body>
+</html>

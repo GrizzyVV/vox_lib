@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vox_lib · radial</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_shared/helix-life.css" />
+<style>
+  body { display: grid; place-items: center; }
+  .wrap { position: relative; width: 360px; height: 360px; display: none; }
+  .wrap.in { display: block; }
+  .hub { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 78px; height: 78px; border-radius: 50%; background: var(--solid); border: 1px solid var(--line-2); display: grid; place-items: center; cursor: pointer; color: var(--copy); box-shadow: 0 10px 30px rgba(0,0,0,.55); transition: color .12s, border-color .12s; z-index: 5; }
+  .hub:hover { color: var(--red); border-color: var(--red); }
+  .hub i { font-size: 20px; }
+  .item { position: absolute; top: 50%; left: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%; background: rgba(8,8,10,.85); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: background .12s, border-color .12s, transform .12s; backdrop-filter: blur(8px); }
+  .item:hover { background: var(--red-soft); border-color: var(--red); transform: scale(1.08); }
+  .item i { font-size: 18px; color: var(--red); }
+  .item span { font-size: 9.5px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--text); text-align: center; max-width: 68px; line-height: 1.15; }
+  .item .sub { position: absolute; top: 5px; right: 9px; font-size: 8px; color: var(--dim); }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="hub" id="hub"><i class="fa-solid fa-xmark"></i></div>
+</div>
+<script>
+  (function () {
+    "use strict";
+    var wrap = document.getElementById("wrap"), hub = document.getElementById("hub");
+    var open = false, isSub = false, R = 128;
+    function emit(n, d) { if (typeof hEvent === "function") hEvent(n, d || {}); }
+    function txt(s) { var d = document.createElement("div"); d.textContent = String(s == null ? "" : s); return d.innerHTML; }
+
+    function show(d) {
+      d = d || {}; var items = d.items || []; isSub = !!d.isSub;
+      wrap.querySelectorAll(".item").forEach(function (n) { n.remove(); });
+      hub.innerHTML = isSub ? '<i class="fa-solid fa-arrow-left"></i>' : '<i class="fa-solid fa-xmark"></i>';
+      var n = items.length || 1;
+      items.forEach(function (it, i) {
+        var ang = (-90 + i * (360 / n)) * Math.PI / 180;
+        var el = document.createElement("div"); el.className = "item";
+        el.style.left = (180 + Math.cos(ang) * R) + "px"; el.style.top = (180 + Math.sin(ang) * R) + "px";
+        el.innerHTML = (it.sub ? '<span class="sub"><i class="fa-solid fa-chevron-right"></i></span>' : "") +
+          (it.icon ? '<i class="fa-solid fa-' + it.icon + '"></i>' : "") + '<span>' + txt(it.label) + '</span>';
+        el.addEventListener("click", function () { emit("radial:select", { index: it.index }); });
+        wrap.appendChild(el);
+      });
+      wrap.classList.add("in"); open = true;
+    }
+    function hide() { open = false; wrap.classList.remove("in"); }
+
+    hub.addEventListener("click", function () { emit(isSub ? "radial:back" : "radial:close", {}); });
+    document.addEventListener("keydown", function (e) { if (open && e.key === "Escape") emit("radial:close", {}); });
+    window.addEventListener("message", function (e) {
+      var m = e.data; if (!m || !m.name) return;
+      if (m.name === "radial:show") show(m.args && m.args[0]); else if (m.name === "radial:hide") hide();
+    });
+    setTimeout(function () { emit("Ready", {}); }, 80);
+    window.__voxRadial = show;
+    if (location.hash === "#preview") {
+      document.body.style.background = "#0A0A0A";
+      show({ items: [
+        { index:1, label: "Vehicle", icon: "car" }, { index:2, label: "Inventory", icon: "box-open" },
+        { index:3, label: "Phone", icon: "mobile" }, { index:4, label: "Job", icon: "briefcase", sub: true },
+        { index:5, label: "Emotes", icon: "person" }, { index:6, label: "Settings", icon: "gear" },
+      ] });
+    }
+  })();
+</script>
+</body>
+</html>
