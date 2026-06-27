@@ -1,7 +1,19 @@
 {
   "client": [
     "init.lua",
-    "dev/_devsched.lua",
+    "modules/scheduler.lua",
+    "modules/class.lua",
+    "modules/table.lua",
+    "modules/array.lua",
+    "modules/string.lua",
+    "modules/math.lua",
+    "modules/cache.lua",
+    "modules/print.lua",
+    "modules/locale.lua",
+    "modules/waitfor.lua",
+    "modules/timer.lua",
+    "modules/callback.lua",
+    "modules/hooks.lua",
     "modules/_dialog.lua",
     "modules/notify.lua",
     "modules/textui.lua",
@@ -13,9 +25,6 @@
     "modules/skillcheck.lua",
     "modules/radial.lua",
     "modules/weather.lua",
-    "modules/freecam.lua",
-    "dev/uitest.lua",
-    "dev/weather_menu.lua",
-    "dev/freecam_dev.lua"
+    "modules/freecam.lua"
   ]
 }
