@@ -5,7 +5,7 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.4.1"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
+lib._VERSION = "vox_lib 1.4.2"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
                                  -- + UI tier (notify/textUI/alert/progress/input/context/menu/skillCheck/radial)
                                  -- + cinematic (weather/freecam) + character creator (appearance) + entities (spawn/delete)
 

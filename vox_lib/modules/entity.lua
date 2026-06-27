@@ -138,11 +138,21 @@ function lib.detachEntity(child)
     return ok and { ok = true } or { ok = false, error = "DetachActor failed" }
 end
 
--- Destroy a spawned actor (vehicle or object). Returns boolean.
--- NOTE: destroying a VEHICLE while a player is seated strands that player in the seated pose. Pass `ejectFirst = true`
--- (or call lib.ejectAll) to cleanly eject occupants first — now that lib.exitVehicle exists, this is the proper fix.
+-- Destroy a spawned actor (vehicle or object). Returns boolean (or true=scheduled when ejectFirst delays the destroy).
+-- ⚠️ STRANDING (live-verified 2026-06-27): destroying a VEHICLE while a player is seated STRANDS them in the seated pose, and
+-- there is NO programmatic recovery once it's deleted (exitVehicle/anim-override/movement-reset all fail — only a RELOG fixes it).
+-- So this must be PREVENTED, not recovered. `ejectFirst=true` ejects occupants WHILE the vehicle still exists, then DELAYS the
+-- destroy (the exit event is async — hl-garages waits ~3s) so occupants fully leave before the actor is gone. With a delay
+-- available it returns true immediately and destroys later; without a Timer it falls back to eject+immediate (best-effort).
+local EJECT_DESTROY_DELAY = 3000
 function lib.deleteEntity(entity, ejectFirst)
     if not entity then return false end
-    if ejectFirst and entity.SeatOccupancy then lib.ejectAll(entity) end
+    if ejectFirst and entity.SeatOccupancy then
+        lib.ejectAll(entity)
+        if type(Timer) == "table" and type(Timer.SetTimeout) == "function" then
+            Timer.SetTimeout(function() pcall(function() entity:K2_DestroyActor() end) end, EJECT_DESTROY_DELAY)
+            return true   -- scheduled: occupants ejected now, actor destroyed after the delay
+        end
+    end
     return pcall(function() entity:K2_DestroyActor() end)
 end

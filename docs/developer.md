@@ -267,9 +267,12 @@ lib.exitVehicle(GetPlayerPawn())          -- clean eject (no more stranded seate
 lib.deleteEntity(car, true)               -- eject occupants, then destroy
 ```
 
-> **✅ Stranded-vehicle fixed.** `lib.exitVehicle` / `lib.ejectAll` cleanly remove occupants via the engine's
-> `SendExitVehicleEventToActor` (live-verified — ejects to a normal standing pose, no more stranding) — so
-> `lib.deleteEntity(vehicle, true)` no longer strands the player.
+> **Stranded-vehicle — PREVENT, don't try to recover.** `lib.exitVehicle`/`ejectAll` cleanly eject occupants **while the vehicle
+> still exists** (live-verified — ejects to a normal standing pose). But if you delete a vehicle with someone still seated, they
+> are **stranded in the seated pose with NO programmatic recovery** (live-tested: exitVehicle, anim-override, and movement-reset
+> all fail once the vehicle is gone — only a relog fixes it). So always use **`lib.deleteEntity(vehicle, true)`**, which ejects
+> occupants and then **delays the destroy ~3s** (the exit is async) so they fully leave before the actor is removed. Never delete
+> an occupied vehicle without `ejectFirst`.
 >
 > **⛔ `warpIntoVehicle` is a disabled no-op.** On the current build, `SendEnterVehicleEventToActor` with an empty
 > `FHEnterVehicleParams` (which has no vehicle/seat field) dereferences null and **hard-crashes the client** (verified live —
