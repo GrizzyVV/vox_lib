@@ -234,6 +234,10 @@ local cam = lib.spawnObject("/Script/Engine.CameraActor", coords, { yaw = 180 })
 lib.deleteEntity(car)
 ```
 
+> **⚠️ Don't delete an occupied vehicle.** Destroying a vehicle while a player is seated leaves them stuck in the seated pose
+> (the seat link dangles — there's no character-level `ExitVehicle` to recover cleanly; a relog resets it). Empty/eject the
+> vehicle before `deleteEntity`.
+
 > **Exposing as a cross-package export** is a one-liner in your resource:
 > `exports("myresource", "SpawnVehicle", lib.spawnVehicle)` — then `exports["myresource"]:SpawnVehicle(...)` from anywhere.
 > (vox_lib itself is source-bundled, so it doesn't register exports for you — you choose what to expose.)

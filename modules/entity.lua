@@ -48,6 +48,8 @@ function lib.spawnObject(class, coords, rotation, opts)
 end
 
 -- Destroy a spawned actor (vehicle or object). Returns boolean.
+-- WARNING: destroying a VEHICLE while a player is seated in it leaves that player stuck in the seated pose (the seat link
+-- dangles). Make sure the vehicle is empty before deleting it — eject/clear occupants first. (A relog clears a stuck player.)
 function lib.deleteEntity(entity)
     if not entity then return false end
     return pcall(function() entity:K2_DestroyActor() end)
