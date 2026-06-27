@@ -6,6 +6,7 @@ inputDialog, progressBar/Circle, skillCheck) **yield** — call them from inside
 - [UI](#ui)
 - [Cinematic — weather / time / freecam](#cinematic)
 - [Character Creator — appearance](#character-creator)
+- [Entities — spawning](#entities)
 - [Foundation](#foundation)
 
 ---
@@ -206,6 +207,36 @@ end)
 > (which qb-style inventories re-equip via `equipCosmetics` on possession). `resetAppearance`'s `gender` arg flips the enum but
 > does not by itself swap the base body mesh in the default state. The native UI's "finished" signal (for auto-capture) is an
 > `OnCosmeticsUpdated`-style event — not yet wrapped here; capture on your own confirm/close for now.
+
+---
+
+## Entities
+
+Clean one-call spawning that packages the HELIX natives (`HVehicle`, `HWorld:SpawnActor`, `K2_DestroyActor`). **Server-side** —
+spawned actors replicate to clients automatically (a bare `HVehicle()` is visible with no extra registration; probe-verified).
+Coords accept a UE `Vector` or a plain table (`{x=,y=,z=}` / `{X=,Y=,Z=}` / `{n,n,n}`); rotation accepts a `Rotator`, a bare
+yaw number, or `{pitch=,yaw=,roll=}`.
+
+| Function | Does |
+|---|---|
+| `lib.spawnVehicle(asset, coords, heading?, opts?)` → vehicle\|nil | Spawn a vehicle. `asset` = vehicle Blueprint path. `opts = { plate=, tags={} }`. |
+| `lib.spawnObject(class, coords, rotation?, opts?)` → actor\|nil | Spawn any actor. `class` = a UClass or a class-path string. `opts = { tags={} }`. |
+| `lib.deleteEntity(entity)` → boolean | Destroy a spawned actor. |
+
+```lua
+-- vehicle (asset path comes from your vehicle catalog, e.g. qb-core Shared.Vehicles[model].asset_name)
+local car = lib.spawnVehicle("/HelixVehicles/Blueprints/Cars/H1/BP_H1.BP_H1_C",
+    { x = 569462, y = 562978, z = 4574 }, 90, { plate = "VOX 001" })
+
+-- generic actor
+local cam = lib.spawnObject("/Script/Engine.CameraActor", coords, { yaw = 180 })
+
+lib.deleteEntity(car)
+```
+
+> **Exposing as a cross-package export** is a one-liner in your resource:
+> `exports("myresource", "SpawnVehicle", lib.spawnVehicle)` — then `exports["myresource"]:SpawnVehicle(...)` from anywhere.
+> (vox_lib itself is source-bundled, so it doesn't register exports for you — you choose what to expose.)
 
 ---
 

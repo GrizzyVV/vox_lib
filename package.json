@@ -26,6 +26,7 @@
     "modules/radial.lua",
     "modules/weather.lua",
     "modules/freecam.lua",
-    "modules/charcreator.lua"
+    "modules/charcreator.lua",
+    "modules/entity.lua"
   ]
 }

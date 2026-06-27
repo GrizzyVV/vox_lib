@@ -13,6 +13,7 @@ and a cinematic freecam — all styled for HELIX and driven by a single global `
 | **UI** | `notify` · `showTextUI/hideTextUI` · `alertDialog` · `progressBar/progressCircle` · `inputDialog` · context menu · list menu · `skillCheck` · radial menu |
 | **Cinematic** | weather (`SetWeather`/`SetCinematicSky`) · time (`SetTime`/`InterpolateTime`) · freecam (`StartFreeCam`/`ToggleFreeCam`) |
 | **Character** | character creator (`openCharacterCreator`) + appearance capture/persist/reapply (`getAppearance`/`applyAppearance`) over HELIX's native cosmetics |
+| **Entities** | one-call spawning — `spawnVehicle` · `spawnObject` · `deleteEntity` (packages `HVehicle`/`SpawnActor`/`K2_DestroyActor`) |
 | **Foundation** | `lib.class` · `lib.table` · `lib.array` · `lib.string` · `lib.math` · `lib.cache` · `lib.print` · `lib.locale` · `lib.timer` · `lib.waitFor` · `lib.callback` · `lib.hook` |
 
 ## How it loads (read this first)

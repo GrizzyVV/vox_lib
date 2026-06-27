@@ -51,6 +51,9 @@ foundation (class/table/array/string/math/cache/print/locale/timer/waitFor/callb
 - UI tier verified 9/9 end-to-end; production manifest verified to load clean (all 25 modules, no errors).
 
 ## Changelog
+- **1.2.0** — `modules/entity.lua`: clean entity spawning (`spawnVehicle`/`spawnObject`/`deleteEntity`) packaging `HVehicle`
+  (global vehicle constructor, live-proven visible-without-registration) / `HWorld:SpawnActor` / `K2_DestroyActor`. Server-side;
+  flexible coord/rotation inputs. Docs: developer.md (Entities), tech.md.
 - **1.1.0** — `modules/charcreator.lua`: Character Creator surface over HELIX's native cosmetics (`BPC_CharacterCreator`).
   Appearance capture/persist/reapply round-trip probe-verified live (`RetainCharacterCustomizationPreset:SaveToString` ↔
   `LoadFromString`+`ApplyCharacterCustomizationPreset`); contract `{Gender, Slots:{guid:{MaterialParameters}}}`. No web page

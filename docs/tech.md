@@ -67,6 +67,15 @@ player pawn. vox_lib wraps it rather than reimplementing a creator UI — HELIX 
 (probe-verified end-to-end). The stock flow reads only `.Gender` and discards the preset, so appearance is otherwise lost on
 respawn — `lib.applyAppearance` on `HEvent:PlayerPossessed` closes that gap. See `developer.md`.
 
+## Entity spawning
+
+`HVehicle(pos, rot, assetPath)` is a global constructor (like `Sky`/`HWorld`) that spawns a vehicle actor server-side; it
+replicates to clients with no extra step (probe-verified — a bare spawn is immediately visible). Generic actors use
+`HWorld:SpawnActor(class, location, rotation)`; both clean up via `actor:K2_DestroyActor()`. `lib.spawnVehicle/spawnObject/
+deleteEntity` wrap these with flexible coord/rotation inputs. A host framework may additionally set a plate + fire its own
+entity-registration event for a metadata/ownership layer — that's app bookkeeping, *not* required for the entity to exist or
+render, so vox_lib leaves it to the consumer.
+
 ## Known deviations / limits
 
 - `lib.waitFor` returns `nil` on timeout (no throw — see halt-on-first-throw).
