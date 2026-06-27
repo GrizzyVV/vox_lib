@@ -1,8 +1,8 @@
 # vox_lib
 
 A free, **HELIX-native UI + utility library** for HELIX servers — a clean-room equivalent of the `lib.*` contract that
-FiveM resources expect. Notifications, text UI, dialogs, menus, progress, skill checks, a radial, plus weather/time control
-and a cinematic freecam — all styled for HELIX and driven by a single global `lib` table.
+FiveM resources expect. Notifications, text UI, dialogs, menus, progress, skill checks, a radial, plus eased weather/sky/time
+control and a cinematic freecam — all styled for HELIX and driven by a single global `lib` table.
 
 > Verified on HELIX (UE 5.7.4 / Lua 5.4). Clean-room from the public ox_lib API docs only — **no ox_lib source was read.**
 
@@ -11,7 +11,7 @@ and a cinematic freecam — all styled for HELIX and driven by a single global `
 | Group | Surface |
 |---|---|
 | **UI** | `notify` · `showTextUI/hideTextUI` · `alertDialog` · `progressBar/progressCircle` · `inputDialog` · context menu · list menu · `skillCheck` · radial menu |
-| **Cinematic** | weather (`SetWeather`/`SetCinematicSky`) · time (`SetTime`/`InterpolateTime`) · freecam (`StartFreeCam`/`ToggleFreeCam`) |
+| **Cinematic** | weather (`SetWeather`/`InterpolateWeather`) · sky params (`SetSky`/`InterpolateSky` — eased fog/clouds/intensity) · time (`SetTime`/`InterpolateTime`) · `SetCinematicSky` · freecam (`StartFreeCam`/`ToggleFreeCam`) |
 | **Character** | character creator (`openCharacterCreator`) + appearance capture/persist/reapply (`getAppearance`/`applyAppearance`) over HELIX's native cosmetics |
 | **Entities** | one-call spawning — `spawnVehicle` · `spawnObject` · `deleteEntity` (packages `HVehicle`/`SpawnActor`/`K2_DestroyActor`) |
 | **Foundation** | `lib.class` · `lib.table` · `lib.array` · `lib.string` · `lib.math` · `lib.cache` · `lib.print` · `lib.locale` · `lib.timer` · `lib.waitFor` · `lib.callback` · `lib.hook` |
@@ -64,9 +64,12 @@ CreateThread(function()
     end
 end)
 
--- weather + time
-lib.SetWeather("Rain", 8)        -- ease into Rain over 8s
-lib.InterpolateTime(2200, 6)     -- ease the clock to 22:00 over 6s
+-- weather, sky + time (all eased)
+lib.SetWeather("Rain", 8)                                  -- ease into the Rain preset over 8s
+lib.InterpolateSky({ fog = 0.8, cloudCoverage = 0.9 }, 10) -- roll fog + clouds in over 10s
+lib.InterpolateTime(2200, 6)                               -- ease the clock to 22:00 over 6s
+-- or compose a whole look in one call
+lib.SetCinematicSky({ time = 2100, weather = "Foggy", sky = { fog = 0.7 }, transition = 10 })
 ```
 
 See **[`docs/developer.md`](docs/developer.md)** for the complete API (every function, every option).

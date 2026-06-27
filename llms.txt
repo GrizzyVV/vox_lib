@@ -1,6 +1,6 @@
 # vox_lib
 
-> A free, HELIX-native UI + utility library for HELIX (UE5) — a clean-room equivalent of the ox_lib `lib.*` contract that FiveM resources expect. Provides UI (notify, text UI, dialogs, menus, progress, skill check, radial), cinematic control (weather/time/freecam), a character creator over HELIX's native cosmetics, entity spawning, and the foundation utilities — all on one global `lib` table.
+> A free, HELIX-native UI + utility library for HELIX (UE5) — a clean-room equivalent of the ox_lib `lib.*` contract that FiveM resources expect. Provides UI (notify, text UI, dialogs, menus, progress, skill check, radial), cinematic control (eased weather / sky-params / time + freecam), a character creator over HELIX's native cosmetics, entity spawning, and the foundation utilities — all on one global `lib` table.
 
 vox_lib loads into a consumer's own Lua state because HELIX packages are sandboxed and functions don't cross the package boundary — so it is used either as a standalone package or source-bundled, never via `exports`. The deployable resource is the `vox_lib/` folder. For agent navigation + a module map, start with AGENTS.md.
 

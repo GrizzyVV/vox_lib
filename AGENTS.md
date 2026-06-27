@@ -40,7 +40,9 @@ state** and attach to the global `lib`. Two supported ways to use it, both endin
 - `_dialog.lua` → shared return-value plumbing: create WebUI → register a one-shot `hEvent` response handler → `SendEvent` → `Wait`-yield until the user responds
 
 **Cinematic / world**
-- `weather.lua` → `lib.SetWeather` / `lib.SetTime` / `lib.InterpolateTime` (drives the HELIX `Sky()` API)
+- `weather.lua` → `lib.SetWeather`/`InterpolateWeather` · `lib.SetSky`/`InterpolateSky` (eased scalar fog/clouds/intensity) ·
+  `lib.SetTime`/`InterpolateTime` · `lib.SetCinematicSky` (drives the HELIX `Sky()` API; `InterpolateTime`+`InterpolateSky`
+  share the `runTween` helper)
 - `freecam.lua` → detached cinematic camera
 - `charcreator.lua` → `lib.openCharacterCreator` / `getAppearance` / `applyAppearance` (wraps HELIX's native cosmetics)
 - `entity.lua` → `lib.spawnVehicle` / `spawnObject` / `deleteEntity`

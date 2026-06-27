@@ -44,17 +44,49 @@ end
 
 -- tracked state for GetSky readback (HELIX has no live server-weather authority to query for the active type)
 local _state = { weather = "ClearSkies", forcingTime = false }
-local _tween, _tweenActive = 0, false   -- monotonic tween id (a new time-tween supersedes the old) + active flag
+local _tween, _tweenActive = 0, false           -- monotonic time-tween id (a new time-tween supersedes the old) + active flag
+local _wxTween, _wxActive = 0, false            -- weather (preset) transition id + active flag
+local _skyTween, _skyActive = 0, false          -- scalar-param tween id + active flag
+-- last-applied scalar params. PROBE-CONFIRMED 2026-06-27 (client): the Sky scalar SETTERS all exist and accept a float, but
+-- there are NO getters (GetFog/GetCloudCoverage/... are nil) — so we MUST track what WE set to know a tween's start value.
+-- The baselines below are UltraDynamicSky-ish neutrals used only as a fallback "from" the very first time a param is tweened
+-- (we can't read the engine's true default — no getter); after that, the tracked value is used.
+local _skyState = {}
+local SKY_BASELINE = { fog = 0.0, cloudCoverage = 0.5, contrast = 1.0, overallIntensity = 1.0,
+                       nightBrightness = 0.1, sunLightIntensity = 1.0, sunRadius = 1.0 }
+-- scalar param name -> Sky setter method. All 7 PROBE-CONFIRMED present + float-accepting client-side (2026-06-27).
+local SKY_PARAMS = { fog = "SetFog", cloudCoverage = "SetCloudCoverage", contrast = "SetContrast",
+                     overallIntensity = "SetOverallIntensity", nightBrightness = "SetNightBrightness",
+                     sunLightIntensity = "SetSunLightIntensity", sunRadius = "SetSunRadius" }
 
 function lib.SetWeather(weatherType, transitionSec)
     local sky = getSky(); if not sky then return { ok = false, error = "Sky() unavailable on this side/build" } end
     local enum, resolved = resolveWeather(weatherType)
     if not enum then return { ok = false, error = "unknown weather type: " .. tostring(weatherType) } end
-    local ok = pcall(function() sky:ChangeWeather(enum, (type(transitionSec) == "number" and transitionSec) or 0) end)
+    local sec = (type(transitionSec) == "number" and transitionSec) or 0
+    local ok = pcall(function() sky:ChangeWeather(enum, sec) end)
     if not ok then return { ok = false, error = "ChangeWeather failed" } end
+    _wxTween = _wxTween + 1                      -- supersede any in-flight InterpolateWeather state
+    _wxActive = sec > 0 and true or false
     _state.weather = resolved
+    if _wxActive then
+        local id = _wxTween
+        pcall(function() Timer.SetTimeout(function() if id == _wxTween then _wxActive = false end end, sec * 1000) end)
+    end
     return { ok = true, value = resolved }
 end
+
+-- Symmetric to InterpolateTime: transition to a new weather PRESET over durationSec. The engine (UltraDynamicSky) does the
+-- actual blend via ChangeWeather's transition arg — verified canonical in real HELIX code (qb-weathersync uses a 5s delay) —
+-- so `easing` is accepted for API symmetry but the curve is the engine's. This adds the missing state contract on top:
+-- IsWeatherInterpolating() + supersede (a newer call cancels the old transition's active flag). For per-parameter eased
+-- control of fog/clouds/intensity (which have NO native blend), use lib.InterpolateSky.
+function lib.InterpolateWeather(weatherType, durationSec, _easing)
+    local duration = math.max(0, tonumber(durationSec) or 5)
+    return lib.SetWeather(weatherType, duration)
+end
+
+function lib.IsWeatherInterpolating() return _wxActive end
 
 -- HELIX has no foreign server-weather to resync to (that's a future a future bridge resource concern per the scope boundary),
 -- so "clear" = restore a clean default. Smooth transition so it doesn't snap.
@@ -78,6 +110,26 @@ local function ease(kind, x)
     if kind == "easeIn" then return x * x end
     if kind == "easeOut" then return 1 - (1 - x) * (1 - x) end
     return x < 0.5 and (2 * x * x) or (1 - ((-2 * x + 2) ^ 2) / 2)   -- easeInOut (default)
+end
+
+-- Generic eased tween over the native Timer. `apply(frac)` receives the EASED 0..1 progress each step (and exactly 1.0 on the
+-- final step for a precise landing); `guard()` returns false once a newer tween supersedes this one (stops the chain). Returns
+-- false when no Timer is available (caller should have applied the end-state instantly). ~25 fps, same cadence as the clock tween.
+local function runTween(durationSec, easing, apply, guard, onDone)
+    if type(Timer) ~= "table" or type(Timer.SetTimeout) ~= "function" then return false end
+    local duration = math.max(0.05, tonumber(durationSec) or 1.5)
+    local steps = math.max(1, math.floor(duration * 25))
+    local interval = (duration * 1000) / steps
+    local i = 0
+    local function stepFn()
+        if guard and not guard() then return end
+        i = i + 1
+        apply(i < steps and ease(easing, i / steps) or 1)
+        if i < steps then Timer.SetTimeout(stepFn, interval)
+        else if onDone then onDone() end end
+    end
+    stepFn()
+    return true
 end
 
 -- Smoothly interpolate the clock from NOW to `target` HHMM over durationSec (eased; shortest-path on the 0-2400 circle).
@@ -114,6 +166,71 @@ function lib.InterpolateTime(target, durationSec, easing)
 end
 
 function lib.IsTimeInterpolating() return _tweenActive end
+
+-- resolve a {param = value | {from=,to=}} table into a list of {name, method, from, to}. `to` is required per param; `from`
+-- falls back to the explicit from -> last value WE applied -> a neutral baseline -> the target (which makes it an instant set).
+local function resolveSkyParams(params)
+    local list, unknown = {}, {}
+    for name, v in pairs(params) do
+        local method = SKY_PARAMS[name]
+        if not method then unknown[#unknown + 1] = name
+        else
+            local to, from
+            if type(v) == "table" then to = tonumber(v.to); from = tonumber(v.from) else to = tonumber(v) end
+            if to ~= nil then
+                from = from or _skyState[name] or SKY_BASELINE[name] or to
+                list[#list + 1] = { name = name, method = method, from = from, to = to }
+            end
+        end
+    end
+    return list, unknown
+end
+
+-- Instantly set scalar sky params and record them (so a later InterpolateSky knows where to tween FROM).
+-- params: { fog=, cloudCoverage=, contrast=, overallIntensity=, nightBrightness=, sunLightIntensity=, sunRadius= }
+function lib.SetSky(params)
+    if type(params) ~= "table" then return { ok = false, error = "params table required" } end
+    local sky = getSky(); if not sky then return { ok = false, error = "Sky() unavailable" } end
+    local list, unknown = resolveSkyParams(params)
+    if #list == 0 then return { ok = false, error = "no known sky params (got: " .. table.concat(unknown, ", ") .. ")" } end
+    _skyTween = _skyTween + 1; _skyActive = false   -- cancel any running scalar tween
+    for _, p in ipairs(list) do
+        pcall(function() sky[p.method](sky, p.to) end)
+        _skyState[p.name] = p.to
+    end
+    return { ok = true, value = list }
+end
+
+-- The real missing piece: eased per-parameter weather interpolation. The scalar sky params have NO native blend (unlike
+-- ChangeWeather's preset transition and unlike... well, the clock also snaps) so we tween them ourselves, frame-by-frame, with
+-- the same machinery as InterpolateTime. Each param may be a number (tween from the tracked/baseline value) or {from=,to=} for
+-- an explicit ramp. Async / fire-and-forget; a newer SetSky/InterpolateSky supersedes a running one.
+-- e.g. lib.InterpolateSky({ fog = 0.8, cloudCoverage = 0.9, overallIntensity = 0.6 }, 10, 'easeInOut')
+function lib.InterpolateSky(params, durationSec, easing)
+    if type(params) ~= "table" then return { ok = false, error = "params table required" } end
+    local sky = getSky(); if not sky then return { ok = false, error = "Sky() unavailable" } end
+    local list, unknown = resolveSkyParams(params)
+    if #list == 0 then return { ok = false, error = "no known sky params (got: " .. table.concat(unknown, ", ") .. ")" } end
+    _skyTween = _skyTween + 1; local id = _skyTween; _skyActive = true
+    local function landAll()
+        for _, p in ipairs(list) do pcall(function() sky[p.method](sky, p.to) end); _skyState[p.name] = p.to end
+    end
+    local started = runTween(durationSec, easing,
+        function(frac)                                          -- apply: lerp every param this frame
+            for _, p in ipairs(list) do
+                pcall(function() sky[p.method](sky, p.from + (p.to - p.from) * frac) end)
+            end
+        end,
+        function() return id == _skyTween end,                  -- guard: superseded?
+        function() landAll(); _skyActive = false end)           -- onDone: exact landing + clear flag
+    if not started then                                          -- no Timer available -> instant
+        landAll(); _skyActive = false
+        return { ok = true, value = list, transitioning = false }
+    end
+    return { ok = true, value = list, transitioning = true }
+end
+
+function lib.IsSkyInterpolating() return _skyActive end
 
 -- t: {hour,minute} or HHMM number. transitionSec>0 → smooth eased interpolation; else instant. Freezes the clock.
 function lib.SetTime(t, transitionSec)
@@ -152,11 +269,22 @@ function lib.GetSky()
                                   weather = _state.weather, forcingTime = _state.forcingTime } }
 end
 
--- cinematic compositions (the source contract — cinematic consumers consume these unchanged): force a whole look atomically
+-- cinematic compositions (the source contract — cinematic consumers consume these unchanged): force a whole look atomically.
+-- opts: { time=, weather=, sky={fog=,...}, transition= }. transition>0 → everything eases over `transition` sec instead of snapping.
 function lib.SetCinematicSky(opts)
     if type(opts) ~= "table" then return { ok = false, error = "opts table required" } end
-    if opts.time ~= nil then local r = lib.SetTime(opts.time); if not r.ok then return r end end
-    if opts.weather ~= nil then local r = lib.SetWeather(opts.weather, opts.transition); if not r.ok then return r end end
+    local t = tonumber(opts.transition)
+    if opts.time ~= nil then
+        local r = (t and t > 0) and lib.InterpolateTime(opts.time, t, opts.easing) or lib.SetTime(opts.time)
+        if not r.ok then return r end
+    end
+    if opts.weather ~= nil then
+        local r = lib.SetWeather(opts.weather, t or 0); if not r.ok then return r end
+    end
+    if type(opts.sky) == "table" then
+        local r = (t and t > 0) and lib.InterpolateSky(opts.sky, t, opts.easing) or lib.SetSky(opts.sky)
+        if not r.ok then return r end
+    end
     return { ok = true }
 end
 
@@ -166,7 +294,8 @@ function lib.ClearCinematicSky()
     return { ok = true }
 end
 
--- expose the resolvable weather names (for a dev menu / validation)
+-- expose the resolvable weather names + the scalar sky param names (for a dev menu / validation)
 lib.WeatherTypes = NATIVE
+lib.SkyParams = { "fog", "cloudCoverage", "contrast", "overallIntensity", "nightBrightness", "sunLightIntensity", "sunRadius" }
 
 return lib.SetWeather

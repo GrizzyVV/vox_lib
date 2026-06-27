@@ -4,7 +4,7 @@ Every public function on the global `lib` table. All UI is **client-side**. Func
 inputDialog, progressBar/Circle, skillCheck) **yield** — call them from inside a thread (`CreateThread(function() ... end)`).
 
 - [UI](#ui)
-- [Cinematic — weather / time / freecam](#cinematic)
+- [Cinematic — weather / sky / time / freecam](#cinematic)
 - [Character Creator — appearance](#character-creator)
 - [Entities — spawning](#entities)
 - [Foundation](#foundation)
@@ -126,11 +126,27 @@ lib.showRadial()    -- or lib.showRadial("more_radial")
 
 ## Cinematic
 
-### Weather — `lib.SetWeather(type, transitionSec)` / `lib.ClearWeather()` / `lib.WeatherTypes`
+### Weather — `lib.SetWeather(type, transitionSec)` / `lib.InterpolateWeather(type, durationSec)` / `lib.ClearWeather()` / `lib.WeatherTypes`
 `type` is one of the 13 native weather names (also in `lib.WeatherTypes`): `ClearSkies, Cloudy, Foggy, Overcast,
-PartlyCloudy, Rain, RainLight, RainThunderstorm, SandDustCalm, SandDustStorm, Snow, SnowBlizzard, SnowLight`.
+PartlyCloudy, Rain, RainLight, RainThunderstorm, SandDustCalm, SandDustStorm, Snow, SnowBlizzard, SnowLight`. GTA-style
+aliases (`EXTRASUNNY`, `THUNDER`, `BLIZZARD`, …) also resolve, so converted FiveM resources keep working.
 ```lua
-lib.SetWeather("RainThunderstorm", 10)   -- ease over 10s (0/omitted = instant)
+lib.SetWeather("RainThunderstorm", 10)      -- preset transition eased over 10s by the engine (0/omitted = instant snap)
+lib.InterpolateWeather("Foggy", 8)          -- same, with the IsWeatherInterpolating() contract
+```
+The preset **transition** is the engine's native blend (UltraDynamicSky). `lib.IsWeatherInterpolating()` reports whether a
+timed transition is still in flight; a newer `SetWeather`/`InterpolateWeather` supersedes the previous one.
+
+### Sky parameters — `lib.SetSky(params)` / `lib.InterpolateSky(params, durationSec, easing)` / `lib.IsSkyInterpolating()`
+Per-parameter control of the scalar sky look (`lib.SkyParams`): `fog, cloudCoverage, contrast, overallIntensity,
+nightBrightness, sunLightIntensity, sunRadius`. These have **no native blend** — `InterpolateSky` tweens them frame-by-frame
+(same eased machinery as `InterpolateTime`). Each param is a number (tween from the last value we set / a neutral baseline) or
+`{ from =, to = }` for an explicit ramp. `easing` ∈ `linear | easeIn | easeOut | easeInOut` (default `easeInOut`).
+```lua
+lib.SetSky({ fog = 0.1, cloudCoverage = 0.4 })                      -- snap
+lib.InterpolateSky({ fog = 0.85, cloudCoverage = 0.9,              -- roll a storm in over 12s
+                     overallIntensity = 0.6 }, 12, "easeInOut")
+lib.InterpolateSky({ fog = { from = 0, to = 0.5 } }, 6)            -- explicit from→to ramp
 ```
 
 ### Time — `lib.SetTime(t, transitionSec)` / `lib.InterpolateTime(target, durationSec, easing)` / `lib.ClearTime()`
@@ -142,7 +158,13 @@ lib.InterpolateTime(2200, 6)  -- ease to 22:00 over 6s
 ```
 
 ### Cinematic sky — `lib.SetCinematicSky(opts)` / `lib.ClearCinematicSky()` / `lib.GetSky()`
-Direct access to the HELIX `Sky()` surface for combined weather/time/animation control.
+Compose a whole look atomically. `opts = { time =, weather =, sky = {…}, transition =, easing = }`. When `transition > 0`,
+time + the scalar `sky` params **ease** over that many seconds (and the weather preset uses the engine blend); otherwise it all
+snaps. `lib.GetSky()` reads back the current time/weather/forcing state.
+```lua
+lib.SetCinematicSky({ time = 2100, weather = "Foggy",
+                      sky = { fog = 0.7, overallIntensity = 0.5 }, transition = 10 })
+```
 
 ### Freecam — `lib.StartFreeCam(opts)` / `lib.StopFreeCam()` / `lib.ToggleFreeCam(opts)` / `lib.IsFreeCamActive()`
 Detached cinematic camera (your character is parked on a hidden host pawn, so movement/ability inputs don't leak). WASD +

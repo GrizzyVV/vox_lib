@@ -51,11 +51,29 @@ concern; vox_lib's own pages call `hEvent` directly.)
 
 ## Cinematic layer
 
-Weather/time/sky drive HELIX's `Sky()` surface (`SetTimeOfDay`, `ChangeWeather`, `SetAnimateTimeOfDay`); `InterpolateTime`
-eases the clock over a duration. The freecam spawns a hidden `ASpectatorPawn` to **possess** (detaching the character so
-movement/ability inputs don't leak), views a camera actor blended in with `SetViewTargetWithBlend`, and drives it from
-`GetControlRotation` + key-tracked movement applied via `K2_TeleportTo`. Input is `Input.BindKey` (HELIX exposes key
-press/release only — no mouse-delta/axis), with mouse-look read from control rotation.
+Weather/time/sky drive HELIX's `Sky()` surface. There are **two kinds of transition**, because the engine blends some things
+and not others:
+
+- **Presets** (`ChangeWeather(type, sec)`) and **time** are different beasts. `ChangeWeather` has a *native* blend — pass it a
+  duration and UltraDynamicSky tweens the preset for you (this is canonical; HELIX's own qb-weathersync uses a 5s delay).
+  `SetTimeOfDay`, by contrast, is an **instant snap** with no native blend.
+- **Scalar sky params** (`SetFog`, `SetCloudCoverage`, `SetContrast`, `SetOverallIntensity`, `SetNightBrightness`,
+  `SetSunLightIntensity`, `SetSunRadius`) also have **no native blend** — and crucially **no getters** (probe-verified: the
+  `Get*` for scalars are `nil`).
+
+So vox_lib supplies the missing eased tweens itself. `InterpolateTime` and `InterpolateSky` share one `runTween` helper that
+steps ~25 fps over the native `Timer`, applying an eased fraction each frame (`easeIn/Out/InOut/linear`) and landing exactly on
+the final step; a monotonic id supersedes a stale tween, and `Is*Interpolating()` reports state. Because the scalar params have
+no getters, vox_lib **tracks the last value it set** (`_skyState`) to know where a tween starts (or you pass `{from, to}`).
+`InterpolateWeather` wraps the native preset blend with the same state/supersede contract for symmetry; `SetCinematicSky`
+composes time + weather + scalar sky in one call (eased when given a `transition`). **Probe + screenshot-verified end-to-end**
+on the ESX testbed (all 7 setters present/float-accepting; a 12s eased ramp captured frame-by-frame). These are client-render,
+so they run client-side.
+
+The freecam spawns a hidden `ASpectatorPawn` to **possess** (detaching the character so movement/ability inputs don't leak),
+views a camera actor blended in with `SetViewTargetWithBlend`, and drives it from `GetControlRotation` + key-tracked movement
+applied via `K2_TeleportTo`. Input is `Input.BindKey` (HELIX exposes key press/release only — no mouse-delta/axis), with
+mouse-look read from control rotation.
 
 ## Character Creator (native cosmetics)
 
