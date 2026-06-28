@@ -285,6 +285,47 @@ lib.deleteEntity(car, true)               -- eject occupants, then destroy
 
 ---
 
+## Vehicle Paint
+
+Per-vehicle colouring on HELIX's **instanced** vehicle render. **Client-side** (material/render is client-side — call these on
+the client, e.g. inside a `RegisterClientEvent` handler driven by your server).
+
+> **How it works (and the dependency):** gameplay vehicles are drawn by an `HVehicleInstancesContainerActor` (one instanced
+> mesh per body part), so a flat material colour would tint *every* car of that model. These functions instead write
+> **per-instance custom data** (RGB) at the target vehicle's instance, so you can paint **one car without touching the others**.
+> This requires the vehicle's paint material to read per-instance custom data (`PerInstanceCustomData3Vector`) — shipping
+> natively in HELIX. Until a given material supports it the calls are harmless visual no-ops; `lib.setFleetColor(..., "flat")`
+> works on any paint material today.
+
+Colours accept three numbers (`0..1`, or `0..255` if any value > 1), a table `{r,g,b}`, or a hex string `"#RRGGBB"`.
+The `vehicle` argument accepts an `HVehicle` handle, a raw vehicle actor, or anything with `.Object`.
+
+| function | does |
+|---|---|
+| `lib.setVehicleColor(vehicle, r, g, b)` | paint the **whole body** of one vehicle. Returns # of components painted. |
+| `lib.setVehicleComponentColor(vehicle, component, r, g, b)` | paint **one component** — `component` is a mesh-name substring, e.g. `"Body"`, `"Door"`, `"Hood"`, `"Trunk"` (case-insensitive). |
+| `lib.setFleetColor(r, g, b, mode)` | paint the **entire fleet** (all vehicles). `mode` = `"instance"` (default) or `"flat"` (works on any paint material today, but uniform per model). |
+| `lib.getVehicleColor(vehicle)` → `r, g, b` | read a vehicle's current colour (or nil). |
+| `lib.resetVehicleColor(vehicle [, r, g, b])` | stop any effect + reset to white (or a given colour). |
+| `lib.interpVehicleColor(vehicle, r, g, b, duration [, opts])` → handle | **smoothly interpolate** to a target colour over `duration` ms. `opts`: `{ component, from, steps_ms, onDone }`. |
+| `lib.vehicleParty(vehicle [, opts])` → handle | **party mode** — continuously cycle the colour wheel. `opts`: `{ component, speed (hue/sec, default 0.25), saturation, value, steps_ms }`. |
+| `lib.stopVehicleEffect(vehicle)` | stop an active interp/party effect (or call `handle.stop()`). |
+| `lib.hsvToRgb(h, s, v)` → `r, g, b` | helper for custom colour effects. |
+
+```lua
+-- on the client (e.g. after the server tells you to paint a vehicle)
+lib.setVehicleColor(veh, "#1E90FF")            -- whole car blue
+lib.setVehicleComponentColor(veh, "Hood", 255, 0, 0)   -- just the hood red
+lib.interpVehicleColor(veh, 0, 1, 0, 2000)     -- fade to green over 2s
+local party = lib.vehicleParty(veh, { speed = 0.5 })   -- rainbow loop
+-- party.stop()  -- or lib.stopVehicleEffect(veh)
+```
+
+> One effect runs per vehicle (starting a new one cancels the previous). For networked paint, store the colour server-side and
+> broadcast to clients, which apply it on spawn + on change (paint itself is client-local).
+
+---
+
 ## Animations
 
 > ✅ **VERIFIED RENDERING (in-engine).** The long-standing non-render was a **wrong slot**: the default was `"FullBody"`, which
