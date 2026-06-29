@@ -46,17 +46,23 @@ end
 -- ── engine plumbing ─────────────────────────────────────────────────────────
 local function world() return HWorld or (GetWorld and GetWorld()) end
 
-local function each(arr, fn)               -- iterate an UnLua TArray (0/1-based safe; nil-guarded)
+local function each(arr, fn)               -- iterate an UnLua TArray (0-indexed: valid indices are 0..n-1; nil-guarded)
     if not arr then return end
     local n = 0; pcall(function() n = arr:Length() end)
-    for i = 0, n do local v; if pcall(function() v = arr:Get(i) end) and v then fn(v) end end
+    for i = 0, n - 1 do local v; if pcall(function() v = arr:Get(i) end) and v then fn(v) end end
 end
 
-local function containers()                -- all vehicle instance containers in the world
+-- all vehicle instance containers. NOTE: GetAllActorsOfClass on the specific HELIX C++ class
+-- (UE.AHVehicleInstancesContainerActor) is unreliable in UnLua (often returns empty), so we enumerate AActor and
+-- filter by class name — the proven-reliable approach.
+local function containers()
     local out = {}
     local w = world(); if not w then return out end
-    local arr; pcall(function() arr = UE.UGameplayStatics.GetAllActorsOfClass(w, UE.AHVehicleInstancesContainerActor) end)
-    each(arr, function(c) out[#out + 1] = c end)
+    local arr; pcall(function() arr = UE.UGameplayStatics.GetAllActorsOfClass(w, UE.AActor) end)
+    each(arr, function(a)
+        local cn; pcall(function() cn = tostring(a:GetClass():GetName()) end)
+        if cn and cn:find("HVehicleInstancesContainer", 1, true) then out[#out + 1] = a end
+    end)
     return out
 end
 
@@ -125,21 +131,30 @@ local function instanceIndexFor(ism, loc)
     return best
 end
 
--- set one instance's colour on an ISM (ensures the ISM exposes 3 custom-data floats first)
+-- set one instance's colour on an ISM. Returns true if written.
+-- ⚠️ CRASH SAFETY: SetCustomDataValue on an ISM with fewer than 3 custom-data floats is an OUT-OF-BOUNDS native write that
+-- HARD-CRASHES the client (uncatchable — pcall does NOT save it). A vehicle only has custom-data floats when its paint ISM is
+-- set up for per-instance colour (the per-instance vehicle material). So we ONLY write when NumCustomDataFloats >= 3; otherwise
+-- we skip (harmless no-op) rather than crash. We do NOT raise NumCustomDataFloats at runtime (reallocating a live ISM's
+-- per-instance buffer is itself crash-prone) — that setup belongs to the vehicle material/asset.
 local function applyInstance(ism, idx, r, g, b)
-    pcall(function() if (ism.NumCustomDataFloats or 0) < CUSTOM_FLOATS then ism.NumCustomDataFloats = CUSTOM_FLOATS end end)
-    pcall(function() ism:SetCustomDataValue(idx, 0, r, false) end)
-    pcall(function() ism:SetCustomDataValue(idx, 1, g, false) end)
-    pcall(function() ism:SetCustomDataValue(idx, 2, b, true) end)   -- last call marks the render state dirty
+    local nf = 0; pcall(function() nf = ism.NumCustomDataFloats or 0 end)
+    if nf < CUSTOM_FLOATS then return false end
+    return pcall(function()
+        ism:SetCustomDataValue(idx, 0, r, false)
+        ism:SetCustomDataValue(idx, 1, g, false)
+        ism:SetCustomDataValue(idx, 2, b, true)   -- last call marks the render state dirty
+    end)
 end
 
--- core: paint one vehicle (optionally one component). returns count of instances painted.
+-- core: paint one vehicle (optionally one component). returns count of instances painted (only instances that were
+-- actually written — i.e. whose ISM is set up for per-instance colour; see applyInstance).
 local function paintVehicle(vehicle, r, g, b, component)
     local loc = vehicleLoc(vehicle); if not loc then return 0 end
     local painted = 0
     forEachPaintISM(component, function(_, ism)
         local idx = instanceIndexFor(ism, loc)
-        if idx then applyInstance(ism, idx, r, g, b); painted = painted + 1 end
+        if idx and applyInstance(ism, idx, r, g, b) then painted = painted + 1 end
     end)
     return painted
 end
