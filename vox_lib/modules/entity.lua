@@ -156,3 +156,65 @@ function lib.deleteEntity(entity, ejectFirst)
     end
     return pcall(function() entity:K2_DestroyActor() end)
 end
+
+-- ── entity / ped CONTROL + state (probe-VERIFIED actor/character methods, in-engine 2026-06-30) ─────────────────────
+-- Resolve a raw UE actor from an HVehicle handle / wrapper / actor.
+local function asActor(e) if type(e) == "table" then return e.Object or e end return e end
+
+local function healthComponent(entity)
+    local a = asActor(entity); if not a then return nil end
+    local hc; pcall(function() hc = UE.UHActorHealthComponent.FindHealthComponent(a) end)
+    return hc
+end
+
+-- FreezeEntityPosition (PED): frozen=true stops movement; false restores walking.
+function lib.freezeEntity(ped, frozen)
+    local a = asActor(ped); if not a then return false end
+    return pcall(function()
+        if frozen ~= false then a.CharacterMovement:DisableMovement()
+        else a.CharacterMovement:SetMovementMode(1, 0) end   -- 1 = MOVE_Walking
+    end)
+end
+
+-- Freeze a gameplay VEHICLE dead in place. The Chaos vehicle keeps sliding otherwise; SetSimulatePhysics alone does NOT
+-- hold, so disable every component tick + physics. frozen=false re-enables. (proven in the vehicle-paint test.)
+function lib.freezeVehicle(vehicle, frozen)
+    local a = asActor(vehicle); if not a then return false end
+    return pcall(function()
+        a:SetActorTickEnabled(frozen == false)
+        local comps = a:K2_GetComponentsByClass(UE.UActorComponent)
+        local n = 0; pcall(function() n = comps:Length() end)
+        for i = 0, n - 1 do
+            local c; pcall(function() c = comps:Get(i) end)
+            if c then
+                pcall(function() c:SetComponentTickEnabled(frozen == false) end)
+                pcall(function() c:SetSimulatePhysics(frozen == false) end)
+            end
+        end
+    end)
+end
+
+-- SetEntityCollision / SetEntityVisible / GetEntityModel.
+function lib.setEntityCollision(entity, enabled) local a = asActor(entity); return a and pcall(function() a:SetActorEnableCollision(enabled ~= false) end) end
+function lib.setEntityVisible(entity, visible)  local a = asActor(entity); return a and pcall(function() a:SetActorHiddenInGame(visible == false) end) end
+function lib.getEntityModel(entity) local a = asActor(entity); local n; pcall(function() n = tostring(a:GetClass():GetName()) end); return n end
+
+-- Entity health. PEDS read real values via the actor health component; VEHICLES read 0 here -> use lib.getVehicleEngineHealth.
+function lib.getEntityHealth(entity)    local hc = healthComponent(entity); local h; if hc then pcall(function() h = hc:GetHealth() end) end; return h end
+function lib.getEntityMaxHealth(entity) local hc = healthComponent(entity); local h; if hc then pcall(function() h = hc:GetMaxHealth() end) end; return h end
+function lib.isEntityDead(entity)       local hc = healthComponent(entity); local d; if hc then pcall(function() d = hc:IsDeadOrDying() end) end; return d end
+
+-- GetPedBoneCoords: world location of a ped's bone/socket. NOTE: GetMesh() is nil in UnLua -> read the .Mesh PROPERTY.
+function lib.getBoneCoords(ped, bone)
+    local a = asActor(ped); if not a then return nil end
+    local loc; pcall(function() loc = a.Mesh:GetSocketLocation(bone) end); return loc
+end
+
+-- TaskGoToCoord: send an NPC (HPawn-spawned) to a destination via its AI controller. Returns boolean.
+function lib.taskGoTo(ped, coords)
+    local a = asActor(ped); if not a then return false end
+    return pcall(function()
+        local ctrl = a:GetController()
+        UE.UAIBlueprintHelperLibrary.SimpleMoveToLocation(ctrl, toVector(coords))
+    end)
+end

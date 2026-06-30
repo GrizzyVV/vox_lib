@@ -29,6 +29,7 @@
     "modules/charcreator.lua",
     "modules/entity.lua",
     "modules/vehiclepaint.lua",
+    "modules/camera.lua",
     "modules/anim.lua",
     "modules/raycast.lua",
     "modules/world.lua",

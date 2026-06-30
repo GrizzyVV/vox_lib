@@ -88,6 +88,13 @@ function lib.unequipCosmetic(equipmentId) local cs = getSystem(); if not cs then
 function lib.equipCosmetics(equipmentIds) local cs = getSystem(); if not cs then return false end; return pcall(function() cs:EquipCosmeticItems(equipmentIds) end) end
 function lib.isCosmeticEquipped(equipmentId) local cs = getSystem(); if not cs then return false end; local ok, v = pcall(function() return cs:IsCosmeticItemEquipped(equipmentId) end); return ok and v or false end
 
+-- Per-slot material tint + slot/gender control (engine cosmetics methods, UnLua-verified callable 2026-06-30).
+-- color = an FLinearColor (build via UE.FLinearColor(r,g,b,a)). slot = the cosmetic slot name/id.
+function lib.setSlotColor(slot, color)  local cs = getSystem(); if not cs then return false end; return pcall(function() cs:SetMaterialColorOverrideForSlot(slot, color) end) end
+function lib.clearSlotColor(slot)        local cs = getSystem(); if not cs then return false end; return pcall(function() cs:ClearMaterialOverridesFromSlot(slot) end) end
+function lib.setCosmeticGender(gender)   local cs = getSystem(); if not cs then return false end; return pcall(function() cs:SetCosmeticGender(gender) end) end
+function lib.clearCosmetics()            local cs = getSystem(); if not cs then return false end; return pcall(function() cs:ClearAllCosmeticSlots() end) end
+
 -- Getters.
 function lib.getCosmeticGender()   local cs = getSystem(); if not cs then return nil end; local ok, v = pcall(function() return cs:GetCosmeticGender() end); return ok and v or nil end
 function lib.getCosmeticBodyType() local cs = getSystem(); if not cs then return nil end; local ok, v = pcall(function() return cs:GetCosmeticBodyType() end); return ok and v or nil end

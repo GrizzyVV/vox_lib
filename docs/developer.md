@@ -178,6 +178,18 @@ mouse-look, Shift to boost; **Backspace** exits.
 lib.ToggleFreeCam({ speed = 1.0, invertY = true })   -- invertY default true (spectator-host pitch)
 ```
 
+### Scripted camera — `lib.createCam` / `lib.setCamCoord` / `lib.setCamRot` / `lib.pointCamAt` / `lib.renderScriptCams` / `lib.destroyCam`
+The FiveM scripted-camera family for cutscenes/menus. Create a camera actor, position + aim it, make the player view it, then blend
+back. One active scripted cam at a time. ⚠️ *Visual smoke-test still owed — built on the freecam-verified view-target primitives.*
+```lua
+local cam = lib.createCam({ x = 100, y = 200, z = 90 })
+lib.pointCamAt(targetActorOrCoords)        -- or lib.setCamRot({ pitch = -10, yaw = 90 })
+lib.renderScriptCams(true, 1.0)            -- blend TO the cam over 1s
+-- ...cutscene...
+lib.renderScriptCams(false, 1.0)           -- blend back to the pawn
+lib.destroyCam()
+```
+
 ---
 
 ## Character Creator
@@ -202,6 +214,8 @@ Treat it as an opaque blob: store the whole string, hand the whole string back. 
 | `lib.resetAppearance(gender?, bodyType?)` → `boolean` | Reset to engine defaults (defaults to the character's current gender/bodyType). |
 | `lib.equipCosmetic(id)` / `lib.unequipCosmetic(id)` / `lib.equipCosmetics(ids)` | Wearable items by `equipmentId`. |
 | `lib.isCosmeticEquipped(id)` → `boolean` | — |
+| `lib.setSlotColor(slot, color)` / `lib.clearSlotColor(slot)` | Per-slot material tint. `color` = `UE.FLinearColor(r,g,b,a)`. |
+| `lib.setCosmeticGender(gender)` / `lib.clearCosmetics()` | Set gender / clear all worn cosmetic slots. |
 | `lib.getCosmeticGender()` / `lib.getCosmeticBodyType()` | Current enum values. |
 | `lib.getCosmeticsSystem()` | The raw component, for anything not wrapped here. |
 
@@ -255,6 +269,13 @@ yaw number, or `{pitch=,yaw=,roll=}`.
 | `lib.attachEntity(child, parent, rule?)` / `lib.detachEntity(child)` | Attach/detach actors. `rule = "snap"\|"keepWorld"\|"keepRelative"`. |
 | `lib.getVehiclePlate/Fuel/EngineHealth(v)` · `lib.setVehicleFuel/Plate(v, x)` | Read/write vehicle state (accepts an HVehicle or a raw actor — auto-wraps). |
 | `lib.deleteEntity(entity, ejectFirst?)` → boolean | Destroy a spawned actor; `ejectFirst=true` ejects occupants first. |
+| `lib.freezeEntity(ped, frozen)` | Freeze/unfreeze a ped in place (movement mode). |
+| `lib.freezeVehicle(vehicle, frozen)` | Hard-freeze a vehicle (disables every component tick + physics — `SetSimulatePhysics` alone won't hold the Chaos vehicle). |
+| `lib.setEntityCollision(entity, enabled)` / `lib.setEntityVisible(entity, visible)` | Toggle actor collision / visibility. |
+| `lib.getEntityModel(entity)` → `string` | The actor's class name. |
+| `lib.getEntityHealth/getEntityMaxHealth/isEntityDead(entity)` | Ped health via the health component (vehicles read 0 → use `getVehicleEngineHealth`). |
+| `lib.getBoneCoords(ped, bone)` → `Vector` | World location of a ped bone/socket (e.g. `"head"`, `"spine_03"`). |
+| `lib.taskGoTo(ped, coords)` → boolean | Walk an NPC (spawned via `lib.spawnPed`) to a destination via its AI controller. |
 
 ```lua
 -- vehicle (asset path comes from your vehicle catalog, e.g. qb-core Shared.Vehicles[model].asset_name)
