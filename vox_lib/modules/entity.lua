@@ -227,7 +227,12 @@ function lib.getBoneCoords(ped, bone)
     local loc; pcall(function() loc = a.Mesh:GetSocketLocation(bone) end); return loc
 end
 
--- TaskGoToCoord: send an NPC (HPawn-spawned) to a destination via its AI controller. Returns boolean.
+-- TaskGoToCoord: send an NPC (HPawn-spawned) to a destination via its AI controller.
+-- ⚠️ EXPERIMENTAL — EFFECT UNVERIFIED (measured 2026-06-30): the call issues SimpleMoveToLocation and returns true, but the
+-- test NPC moved 0 units over 7s (frozen OR unfrozen). A NavigationSystem exists, so the suspects are: no navmesh BUILT in the
+-- area, the ped not grounded (spawned in MOVE_Falling), or the AI controller needing a behavior tree. DO NOT rely on this for
+-- in-world movement until it's confirmed to actually relocate a grounded ped on a navmeshed map. Returns boolean = pcall success
+-- of the call ONLY (NOT proof of movement).
 function lib.taskGoTo(ped, coords)
     local a = asActor(ped); if not a then return false end
     return pcall(function()
@@ -267,11 +272,16 @@ function lib.getActorsOfClass(class)
     return out
 end
 
--- SetVehicleFixed / engine-health write (b2probe-verified: veh:SetEngineHealth is a function; Repair/SetEngineOn are nil).
+-- SetVehicleFixed / engine-health write. ⚠️ EFFECT UNCONFIRMED (measured 2026-06-30): veh:SetEngineHealth is a callable
+-- function (returns true), BUT veh:GetEngineHealth() reads nil on a freshly HVehicle-spawned car BEFORE and AFTER the set, so
+-- set->get cannot prove the value changed. Likely the engine-health component only populates on an initialised/driven vehicle.
+-- Treat as callable-but-unverified until confirmed on a vehicle that reports a real GetEngineHealth.
 function lib.setVehicleEngineHealth(v, h) v = asVehicle(v); return pcall(function() v:SetEngineHealth(h) end) end
 function lib.repairVehicle(v, full)       v = asVehicle(v); return pcall(function() v:SetEngineHealth(full or 1000) end) end
 
 -- PlaceObjectOnGroundProperly: raycast straight down from the actor and teleport it to the ground hit (keeps rotation).
+-- lib.raycast is now VERIFIED, but placeOnGround returned false on a spawned vehicle in the smoke-test (the down-trace found
+-- no hit below it) -> EFFECT UNCONFIRMED end-to-end; tune the trace start/down distance + ignore-self per target.
 function lib.placeOnGround(entity, opts)
     local a = asActor(entity); if not a then return false end
     opts = opts or {}

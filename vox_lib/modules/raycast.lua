@@ -2,9 +2,9 @@
      Built on probe-verified UE reflection (current build 2026-06-27): UE.UKismetSystemLibrary.LineTraceSingle +
      UE.UGameplayStatics.DeprojectScreenToWorld + UE.UGameplayStatics.BreakHitResult. CLIENT-side.
 
-     NOTE: LineTraceSingle has many args + an OUT-param FHitResult; UnLua's out-param handling is build-specific, so the call
-     is pcall-guarded and the result read both ways (return value AND the passed hit). PROBE-CONFIRM the exact arg order /
-     out-param convention on your build and prune the fallbacks. ]]
+     ✅ VERIFIED in-engine 2026-06-30: a downward trace through the player returned ok=true, hit=true, a sensible hit location
+     (Z=178.8 ≈ capsule top) and a SELF-CONSISTENT distance (213.18 = traceStartZ − hitZ). The arg order + FHitResult out-param
+     read are correct on this build. (`lib.raycastFromCamera` is the client/camera variant — same trace, screen-deprojected start.) ]]
 
 local function toVec(c)
     if c == nil then return Vector() end
