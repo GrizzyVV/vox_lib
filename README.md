@@ -24,8 +24,10 @@ control and a cinematic freecam — all styled for HELIX and driven by a single 
 > 1. **Material support is HELIX-side.** Per-vehicle paint needs the vehicle's material to read per-instance custom data
 >    (`PerInstanceCustomData3Vector`). vox_lib can't ship that — it's a HELIX engine/material change (proposed to HELIX). Until a
 >    vehicle's material supports it, paint is a **harmless no-op** (data is written but unread). *Remove this note once HELIX ships it.*
-> 2. **Stationary vehicles only (for now).** The render instance is matched **by position**, so a moving vehicle can be mismatched or
->    lose its colour. Paint parked/stopped vehicles. *Remove this note once painting-while-moving is solved.*
+> 2. **Stationary vehicles only — a car loses its paint the moment it moves.** This is a **HELIX engine behaviour**, not a vox_lib
+>    bug: when a vehicle moves, the instance container reassigns instance indices and the per-instance colour data is **not** carried
+>    with it, so the moving car goes unpainted (verified in-engine). Stationary cars keep their colour. *Remove this note once HELIX
+>    keeps per-instance custom data bound to the vehicle across movement (can't be fixed from Lua).*
 
 ## How it loads (read this first)
 

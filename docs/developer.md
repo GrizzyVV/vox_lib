@@ -301,9 +301,11 @@ the client, e.g. inside a `RegisterClientEvent` handler driven by your server).
 > the calls set the data but it renders as a **harmless no-op** — no visible change. `lib.setFleetColor(..., "flat")` works on any
 > paint material today. **➜ Remove this limitation once HELIX ships per-instance-reading vehicle materials.**
 >
-> **2. The vehicle must be STATIONARY when painted.** vox_lib currently locates the vehicle's render instance **by position**, and a
-> moving vehicle can be mismatched or lose its colour when the instance container updates. Paint parked/stopped vehicles for now.
-> **➜ Remove this limitation once painting-while-moving is solved (track the vehicle's instance index instead of matching by location).**
+> **2. The vehicle must be STATIONARY — a vehicle loses its paint the moment it MOVES.** This is a **HELIX engine behaviour**, not a
+> vox_lib bug: when a vehicle moves, the instance container **reassigns instance indices AND does not carry the per-instance custom
+> data with it**, so the moving car's colour is dropped (verified in-engine — a car teleported away ended up at a new index, black).
+> Stationary cars keep their colour. Paint parked/stopped vehicles. **➜ Remove this limitation once HELIX keeps per-instance custom
+> data bound to the vehicle across movement** (proposed to HELIX — it can't be fixed from Lua).
 
 Colours accept three numbers (`0..1`, or `0..255` if any value > 1), a table `{r,g,b}`, or a hex string `"#RRGGBB"`.
 The `vehicle` argument accepts an `HVehicle` handle, a raw vehicle actor, or anything with `.Object`.

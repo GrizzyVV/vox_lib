@@ -11,9 +11,10 @@
       paint colour). This is a HELIX-SIDE material change (proposed to HELIX); vox_lib can't ship it. Until a given material
       supports it, calls are harmless no-ops visually (the custom data is set but unread). `lib.setFleetColor(...,"flat")` offers a
       flat-parameter path that works on any paint material today.  ➜ remove once HELIX ships per-instance-reading vehicle materials.
-  (2) STATIONARY — paint vehicles while STILL. The render instance is matched by LOCATION (see instanceIndexFor), so a moving
-      vehicle can be mismatched or lose its colour when the instance container updates.  ➜ remove once we track the instance index
-      per vehicle instead of matching by position (the no-freeze fix).
+  (2) STATIONARY — a vehicle loses its paint the moment it MOVES. This is a HELIX ENGINE behaviour, not a matching bug: when a
+      vehicle moves, the instance container reassigns instance indices AND does not carry the per-instance custom data with it, so the
+      moving car's colour is dropped (verified in-engine: a teleported car landed at a new index, black). Stationary cars keep colour.
+      ➜ remove once HELIX keeps per-instance custom data bound to the vehicle across movement (can't be fixed from Lua — proposed to HELIX).
 
   COLOURS are 0..1 floats. Every function accepts a colour as: three numbers (0..1, or 0..255 if any value > 1), a table
   `{r,g,b}` / `{R,G,B}`, or a hex string `"#RRGGBB"`.
