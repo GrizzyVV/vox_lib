@@ -5,14 +5,15 @@
      Coords accept a UE `Vector` OR a plain table `{x=,y=,z=}` / `{X=,Y=,Z=}` / `{n,n,n}`. Heading is a yaw number; rotation
      accepts a `Rotator`, a yaw number, or `{pitch=,yaw=,roll=}`. ]]
 
+-- NOTE: build via the ARGS-constructor `Vector(x,y,z)` / `Rotator(p,y,r)`, NOT `Vector()` + `.X=` property-assignment.
+-- In-engine 2026-06-30: on a TABLE input the construct-then-assign pattern did NOT persist the scalar writes (UnLua
+-- value-struct gotcha) → produced a (0,0,0)+NaN transform that SpawnActor silently rejects (actor=nil, no error). The
+-- args-form is probe-verified clean. (Latent: a real Vector userdata always worked via the passthrough branch — only
+-- table coords hit the bug, so spawnVehicle/spawnObject/spawnPed were silently origin-spawning on table input.)
 local function toVector(c)
-    if c == nil then return Vector() end
+    if c == nil then return Vector(0, 0, 0) end
     if type(c) == "userdata" then return c end          -- already a UE Vector
-    local v = Vector()
-    v.X = c.x or c.X or c[1] or 0
-    v.Y = c.y or c.Y or c[2] or 0
-    v.Z = c.z or c.Z or c[3] or 0
-    return v
+    return Vector(c.x or c.X or c[1] or 0, c.y or c.Y or c[2] or 0, c.z or c.Z or c[3] or 0)
 end
 
 local function toRotator(r)
@@ -36,12 +37,23 @@ end
 
 -- Spawn a generic actor. `class` = a UClass or a class path string (e.g. "/Script/Engine.CameraActor").
 -- opts (optional): { tags = { ... } }. Returns the actor (or nil).
+-- IN-ENGINE 2026-06-30: the `HWorld:SpawnActor(cls, vector, rotator)` overload HARD-CRASHED the client (Assertion
+-- IsRotationNormalized — a C++ crash pcall can't catch): passing two struct-returning calls as adjacent UFUNCTION args
+-- corrupts the rotation into a non-normalized quat. So spawn via the freecam-VERIFIED `SpawnActor(cls, Transform,
+-- AlwaysSpawn)` form at IDENTITY (normalized) rotation, then orient post-spawn via K2_SetActorRotation (a valid-rotator
+-- path, proven safe). Both primitives verified this session.
 function lib.spawnObject(class, coords, rotation, opts)
     local cls = class
     if type(class) == "string" then cls = LoadClass(class) end
-    if not cls then return nil end
-    local ok, a = pcall(function() return HWorld:SpawnActor(cls, toVector(coords), toRotator(rotation)) end)
-    if not ok or not a then return nil end
+    if not cls or not HWorld then return nil end
+    local a
+    pcall(function()
+        local t = Transform()
+        t.Translation = toVector(coords)
+        a = HWorld:SpawnActor(cls, t, UE.ESpawnActorCollisionHandlingMethod.AlwaysSpawn)
+    end)
+    if not a then return nil end
+    if rotation ~= nil then pcall(function() a:K2_SetActorRotation(toRotator(rotation), false) end) end
     opts = opts or {}
     if opts.tags and a.Tags then for _, t in ipairs(opts.tags) do pcall(function() a.Tags:Add(t) end) end end
     return a

@@ -7,10 +7,11 @@
 
 local _cam   -- the active scripted ACameraActor
 local function controller() return HPlayer end
+-- args-constructor form — see entity.lua toVector note (Vector()+`.X=` does NOT persist on table input → NaN/zero).
 local function toV(c)
     if type(c) == "userdata" then return c end
-    local v = Vector(); if c then v.X = c.x or c.X or c[1] or 0; v.Y = c.y or c.Y or c[2] or 0; v.Z = c.z or c.Z or c[3] or 0 end
-    return v
+    if not c then return Vector(0, 0, 0) end
+    return Vector(c.x or c.X or c[1] or 0, c.y or c.Y or c[2] or 0, c.z or c.Z or c[3] or 0)
 end
 local function toR(r)
     if type(r) == "userdata" then return r end
@@ -20,9 +21,20 @@ local function toR(r)
 end
 
 -- CreateCam / CreateCamWithParams: spawn a scripted camera actor. Returns it (also stored as the active cam).
+-- Uses the freecam-VERIFIED form: HWorld:SpawnActor(ACameraActor, Transform, AlwaysSpawn), spawned with an IDENTITY
+-- (normalized) rotation. The (cls, vector, rotator) overload is AVOIDED: in-engine 2026-06-30 it reached SpawnActor with
+-- a non-normalized rotation quaternion and HARD-CRASHED the client (Assertion IsRotationNormalized — a C++ crash pcall
+-- can't catch). Orient the cam AFTER spawn via setCamRot / pointCamAt (those go through valid-rotation paths).
 function lib.createCam(coords, rot)
-    local cam = lib.spawnObject(UE.ACameraActor, coords, rot)
+    if not (HWorld and UE and UE.ACameraActor) then return nil end
+    local cam
+    pcall(function()
+        local t = Transform()
+        t.Translation = toV(coords)                 -- userdata assignment (safe); rotation left identity = normalized
+        cam = HWorld:SpawnActor(UE.ACameraActor, t, UE.ESpawnActorCollisionHandlingMethod.AlwaysSpawn)
+    end)
     _cam = cam or _cam
+    if cam and rot ~= nil then lib.setCamRot(rot, cam) end
     return cam
 end
 
