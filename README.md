@@ -14,9 +14,18 @@ control and a cinematic freecam — all styled for HELIX and driven by a single 
 | **Cinematic** | weather (`SetWeather`/`InterpolateWeather`) · sky params (`SetSky`/`InterpolateSky` — eased fog/clouds/intensity) · time (`SetTime`/`InterpolateTime`) · `SetCinematicSky` · freecam (`StartFreeCam`/`ToggleFreeCam`) |
 | **Character** | character creator (`openCharacterCreator`) + appearance capture/persist/reapply (`getAppearance`/`applyAppearance`) over HELIX's native cosmetics |
 | **Entities** | spawn `spawnVehicle` · `spawnObject` · `spawnPed` · vehicle `exitVehicle`/`ejectAll`/`warpIntoVehicle` + getters · `attachEntity`/`detachEntity` · `deleteEntity` |
+| **Vehicle paint** | `setVehicleColor` (whole) · `setVehicleComponentColor` (one part) · `setFleetColor` · `getVehicleColor` · `interpVehicleColor` · `vehicleParty` — per-instance colour ⚠️ *see the two limitations below* |
 | **Animation** | `playAnim` / `stopAnim` — montage wrapper over `Animation.Play` (⚠️ experimental — wired but not yet visually verified) |
 | **World / spatial** | `raycast` / `raycastFromCamera` · `worldToScreen` · `spawnMarker` · `lib.points` / `lib.zones` (box/sphere) · `fadeOut`/`fadeIn` |
 | **Foundation** | `lib.class` · `lib.table` · `lib.array` · `lib.string` · `lib.math` · `lib.cache` · `lib.print` · `lib.locale` · `lib.timer` · `lib.waitFor` · `lib.callback` · `lib.hook` |
+
+> ### ⚠️ Vehicle paint — two current limitations (keep until resolved)
+> Full detail in [`docs/developer.md` → Vehicle Paint](docs/developer.md#vehicle-paint).
+> 1. **Material support is HELIX-side.** Per-vehicle paint needs the vehicle's material to read per-instance custom data
+>    (`PerInstanceCustomData3Vector`). vox_lib can't ship that — it's a HELIX engine/material change (proposed to HELIX). Until a
+>    vehicle's material supports it, paint is a **harmless no-op** (data is written but unread). *Remove this note once HELIX ships it.*
+> 2. **Stationary vehicles only (for now).** The render instance is matched **by position**, so a moving vehicle can be mismatched or
+>    lose its colour. Paint parked/stopped vehicles. *Remove this note once painting-while-moving is solved.*
 
 ## How it loads (read this first)
 

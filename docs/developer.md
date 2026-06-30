@@ -290,12 +290,20 @@ lib.deleteEntity(car, true)               -- eject occupants, then destroy
 Per-vehicle colouring on HELIX's **instanced** vehicle render. **Client-side** (material/render is client-side — call these on
 the client, e.g. inside a `RegisterClientEvent` handler driven by your server).
 
-> **How it works (and the dependency):** gameplay vehicles are drawn by an `HVehicleInstancesContainerActor` (one instanced
-> mesh per body part), so a flat material colour would tint *every* car of that model. These functions instead write
-> **per-instance custom data** (RGB) at the target vehicle's instance, so you can paint **one car without touching the others**.
-> This requires the vehicle's paint material to read per-instance custom data (`PerInstanceCustomData3Vector`) — shipping
-> natively in HELIX. Until a given material supports it the calls are harmless visual no-ops; `lib.setFleetColor(..., "flat")`
-> works on any paint material today.
+> **How it works:** gameplay vehicles are drawn by an `HVehicleInstancesContainerActor` (one instanced mesh per body part), so a
+> flat material colour would tint *every* car of that model. These functions instead write **per-instance custom data** (RGB) at
+> the target vehicle's instance, so you can paint **one car without touching the others**.
+
+> ### ⚠️ TWO CURRENT LIMITATIONS — read before using (mirrored in the README and the CLAUDE changelog)
+>
+> **1. The vehicle's material must read per-instance custom data** (`PerInstanceCustomData3Vector` driving base colour). This is a
+> **HELIX-side material change** (proposed to HELIX, not something vox_lib can ship). Until a given vehicle's material supports it,
+> the calls set the data but it renders as a **harmless no-op** — no visible change. `lib.setFleetColor(..., "flat")` works on any
+> paint material today. **➜ Remove this limitation once HELIX ships per-instance-reading vehicle materials.**
+>
+> **2. The vehicle must be STATIONARY when painted.** vox_lib currently locates the vehicle's render instance **by position**, and a
+> moving vehicle can be mismatched or lose its colour when the instance container updates. Paint parked/stopped vehicles for now.
+> **➜ Remove this limitation once painting-while-moving is solved (track the vehicle's instance index instead of matching by location).**
 
 Colours accept three numbers (`0..1`, or `0..255` if any value > 1), a table `{r,g,b}`, or a hex string `"#RRGGBB"`.
 The `vehicle` argument accepts an `HVehicle` handle, a raw vehicle actor, or anything with `.Object`.

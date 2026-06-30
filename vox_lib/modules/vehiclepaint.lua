@@ -6,10 +6,14 @@
   its components — without touching the others, you set PER-INSTANCE CUSTOM DATA (RGB = custom-data floats 0,1,2) on the paint
   ISMs at that vehicle's instance index. That is exactly the instance handling proven in-engine and unchanged here.
 
-  DEPENDENCY: the vehicle's paint material must READ per-instance custom data (a `PerInstanceCustomData3Vector` driving the paint
-  colour). That ships natively in HELIX (the per-instance-paint patch). Until a given material supports it, calls are harmless
-  no-ops visually (the custom data is set but unread). `lib.setFleetColor` also offers a flat-parameter path that works on any
-  paint material today.
+  ⚠️ TWO STANDING LIMITATIONS (keep documented in README + docs/developer.md until each is resolved):
+  (1) DEPENDENCY — the vehicle's paint material must READ per-instance custom data (a `PerInstanceCustomData3Vector` driving the
+      paint colour). This is a HELIX-SIDE material change (proposed to HELIX); vox_lib can't ship it. Until a given material
+      supports it, calls are harmless no-ops visually (the custom data is set but unread). `lib.setFleetColor(...,"flat")` offers a
+      flat-parameter path that works on any paint material today.  ➜ remove once HELIX ships per-instance-reading vehicle materials.
+  (2) STATIONARY — paint vehicles while STILL. The render instance is matched by LOCATION (see instanceIndexFor), so a moving
+      vehicle can be mismatched or lose its colour when the instance container updates.  ➜ remove once we track the instance index
+      per vehicle instead of matching by position (the no-freeze fix).
 
   COLOURS are 0..1 floats. Every function accepts a colour as: three numbers (0..1, or 0..255 if any value > 1), a table
   `{r,g,b}` / `{R,G,B}`, or a hex string `"#RRGGBB"`.
@@ -67,7 +71,12 @@ local function containers()
 end
 
 local function ismMeshName(ism)
-    local nm; pcall(function() local sm = ism:GetStaticMesh(); if sm then nm = tostring(sm:GetName()) end end)
+    local nm
+    pcall(function()
+        local sm = ism.StaticMesh                                 -- UnLua property (the GetStaticMesh() getter returns nil here)
+        if not sm and ism.GetStaticMesh then sm = ism:GetStaticMesh() end
+        if sm then nm = tostring(sm:GetName()) end
+    end)
     return nm or ""
 end
 
@@ -115,10 +124,11 @@ local function instanceIndexFor(ism, loc)
     for i = 0, cnt - 1 do
         local px, py, pz
         pcall(function()
-            -- GetInstanceTransform is an OUT-PARAM UFUNCTION: UnLua returns (success, FTransform). Take whichever
-            -- return is the transform userdata (handles both UnLua return orderings).
-            local r1, r2 = ism:GetInstanceTransform(i, true)          -- (instanceIndex, bWorldSpace=true)
-            local t = (type(r2) == "userdata") and r2 or r1
+            -- GetInstanceTransform(index, OUT FTransform&, bWorldSpace): on this UnLua build the out-param FTransform must be
+            -- PASSED IN (pre-allocated) and is filled in place — NOT returned. (Passing only (i,true) errors with
+            -- "userdata needed but got boolean" and breaks instance matching. Verified in-engine PIE 2026-06-29.)
+            local t = UE.FTransform()
+            ism:GetInstanceTransform(i, t, true)
             local p = UE.UKismetMathLibrary.BreakTransform(t)         -- -> location Vector (proven idiom)
             px, py, pz = vget(p)
         end)
@@ -139,7 +149,17 @@ end
 -- per-instance buffer is itself crash-prone) — that setup belongs to the vehicle material/asset.
 local function applyInstance(ism, idx, r, g, b)
     local nf = 0; pcall(function() nf = ism.NumCustomDataFloats or 0 end)
-    if nf < CUSTOM_FLOATS then return false end
+    if nf < CUSTOM_FLOATS then
+        -- The HELIX vehicle instance container creates paint ISMs with NumCustomDataFloats=0, so the per-instance
+        -- colour channel doesn't exist yet. ALLOCATE it (3 floats = RGB) so the write below is in-bounds. We only do
+        -- this once per ISM (subsequent calls see nf>=3). Setting it on a populated ISM preserves existing instances
+        -- (their custom data defaults to 0). Try the method first, then the property. (in-engine verified 2026-06-29)
+        local set = false
+        pcall(function() ism:SetNumCustomDataFloats(CUSTOM_FLOATS); set = true end)
+        if not set then pcall(function() ism.NumCustomDataFloats = CUSTOM_FLOATS end) end
+        pcall(function() nf = ism.NumCustomDataFloats or 0 end)
+        if nf < CUSTOM_FLOATS then return false end   -- allocation failed -> skip (never write out of bounds)
+    end
     return pcall(function()
         ism:SetCustomDataValue(idx, 0, r, false)
         ism:SetCustomDataValue(idx, 1, g, false)
@@ -147,14 +167,45 @@ local function applyInstance(ism, idx, r, g, b)
     end)
 end
 
--- core: paint one vehicle (optionally one component). returns count of instances painted (only instances that were
--- actually written — i.e. whose ISM is set up for per-instance colour; see applyInstance).
+-- A vehicle occupies the SAME per-instance INDEX in every body-part ISM of its container (probe-verified: the container
+-- adds a vehicle's parts together, so body[idx]/hood[idx]/door[idx]/… are all the same car). The BODY ISM's instance sits
+-- at the vehicle's origin, so we resolve the index THERE (a reliable, on-origin match) and reuse it for every other part.
+-- This is why matching each component ISM by raw proximity failed: offset parts (hood/far doors) sit beyond the match
+-- tolerance from the vehicle origin. Anchoring on the body fixes whole-vehicle AND per-component painting.
+local function vehicleInstanceIndex(loc)
+    -- The body instance sits at the vehicle's origin, so the instance nearest `loc` across ALL paint ISMs is this
+    -- vehicle's body — and its index is the vehicle's index in every other body-part ISM. Name-independent (UnLua's
+    -- static-mesh name access is unreliable), so it works regardless of how components are named.
+    local best, bestd2 = nil, MATCH_TOL2
+    forEachPaintISM(nil, function(_, ism)
+        local cnt = 0; pcall(function() cnt = ism:GetInstanceCount() end)
+        for i = 0, cnt - 1 do
+            local px, py, pz
+            pcall(function()
+                local t = UE.FTransform(); ism:GetInstanceTransform(i, t, true)
+                px, py, pz = vget(UE.UKismetMathLibrary.BreakTransform(t))
+            end)
+            if px then
+                local dx, dy, dz = px - loc[1], py - loc[2], pz - loc[3]
+                local d2 = dx*dx + dy*dy + dz*dz
+                if d2 <= bestd2 then best, bestd2 = i, d2 end
+            end
+        end
+    end)
+    return best
+end
+
+-- core: paint one vehicle (optionally one component). returns count of ISMs written (only those set up for per-instance
+-- colour; see applyInstance). Resolves the vehicle's instance index once (via the body), then writes that index everywhere.
 local function paintVehicle(vehicle, r, g, b, component)
     local loc = vehicleLoc(vehicle); if not loc then return 0 end
+    local idx = vehicleInstanceIndex(loc)
     local painted = 0
     forEachPaintISM(component, function(_, ism)
-        local idx = instanceIndexFor(ism, loc)
-        if idx and applyInstance(ism, idx, r, g, b) then painted = painted + 1 end
+        local i = idx
+        if i == nil then i = instanceIndexFor(ism, loc) end   -- fallback if no body ISM resolved
+        local cnt = 0; pcall(function() cnt = ism:GetInstanceCount() end)
+        if i and i < cnt and applyInstance(ism, i, r, g, b) then painted = painted + 1 end
     end)
     return painted
 end
