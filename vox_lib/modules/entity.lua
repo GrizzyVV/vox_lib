@@ -228,17 +228,47 @@ function lib.getBoneCoords(ped, bone)
 end
 
 -- TaskGoToCoord: send an NPC (HPawn-spawned) to a destination via its AI controller.
--- ⚠️ EXPERIMENTAL — EFFECT UNVERIFIED (measured 2026-06-30): the call issues SimpleMoveToLocation and returns true, but the
--- test NPC moved 0 units over 7s (frozen OR unfrozen). A NavigationSystem exists, so the suspects are: no navmesh BUILT in the
--- area, the ped not grounded (spawned in MOVE_Falling), or the AI controller needing a behavior tree. DO NOT rely on this for
--- in-world movement until it's confirmed to actually relocate a grounded ped on a navmeshed map. Returns boolean = pcall success
--- of the call ONLY (NOT proof of movement).
+-- ⚠️ UNPROVEN — NAVMESH-BLOCKED in the test world (diagnosed 2026-06-30): the wiring is CORRECT — a grounded ped (MovementMode=1
+-- Walking) with its B_AI_Controller_C; SimpleMoveToLocation/MoveToLocation are callable. BUT the ped moves 0 units because the
+-- sandbox world has NO navmesh (RecastNavMesh actors = 0; ProjectPointToNavigation = false), and AI pathing REQUIRES a built
+-- navmesh. So this is environment-blocked, not code-broken — it should work on a real HELIX map with navigation built, but that
+-- is UNPROVEN (no navmeshed world to test on here). Returns pcall success of the call only. For nav-free movement, a manual
+-- AddMovementInput steering loop is the fallback to explore.
 function lib.taskGoTo(ped, coords)
     local a = asActor(ped); if not a then return false end
     return pcall(function()
         local ctrl = a:GetController()
         UE.UAIBlueprintHelperLibrary.SimpleMoveToLocation(ctrl, toVector(coords))
     end)
+end
+
+-- lib.walkTo(ped, coords, opts) — NAV-FREE straight-line steering: AddMovementInput toward the target each tick until within
+-- `radius` or timeout. ✅ VERIFIED in-engine 2026-06-30 (measured: a ped walked 351->768->1169 units toward the target, + eyes).
+-- Works WITHOUT a navmesh (unlike taskGoTo's AI pathing), but is straight-line = NO obstacle avoidance. Non-blocking (drives
+-- itself on a Timer). opts: { radius=100, maxMs=15000, speed=1.0, onArrive=fn(reached_bool) }. Returns true if the loop started.
+function lib.walkTo(ped, coords, opts)
+    local a = asActor(ped); if not a then return false end
+    opts = opts or {}
+    local dest = toVector(coords)
+    local radius = opts.radius or 100
+    local maxTicks = math.floor((opts.maxMs or 15000) / 33)
+    local speed = opts.speed or 1.0
+    local ticks = 0
+    local function tick()
+        ticks = ticks + 1
+        local cur; pcall(function() cur = a:K2_GetActorLocation() end)
+        if not cur then if opts.onArrive then pcall(opts.onArrive, false) end return end
+        local dx, dy = dest.X - cur.X, dest.Y - cur.Y
+        local dist = math.sqrt(dx * dx + dy * dy)
+        if dist <= radius or ticks >= maxTicks then
+            if opts.onArrive then pcall(opts.onArrive, dist <= radius) end
+            return
+        end
+        pcall(function() a:AddMovementInput(UE.FVector(dx, dy, 0.0), speed, false) end)
+        Timer.SetTimeout(tick, 33)
+    end
+    tick()
+    return true
 end
 
 -- ── spatial + enumeration + vehicle repair (b2probe-VERIFIED 2026-06-30) ────────────────────────────────────────────

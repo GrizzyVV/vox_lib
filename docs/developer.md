@@ -276,7 +276,8 @@ yaw number, or `{pitch=,yaw=,roll=}`.
 | `lib.getEntityHealth/getEntityMaxHealth/isEntityDead(entity)` | Ped health via the health component (vehicles read 0 → use `getVehicleEngineHealth`). |
 | `lib.getBoneCoords(ped, bone)` → `Vector` | World location of a ped bone/socket (e.g. `"head"`, `"spine_03"`). |
 | `lib.getBoneIndex(ped, bone)` → `int` | A ped bone's index by name. |
-| `lib.taskGoTo(ped, coords)` → boolean | Walk an NPC (spawned via `lib.spawnPed`) to a destination via its AI controller. |
+| `lib.taskGoTo(ped, coords)` → boolean | AI-path an NPC to a destination. ⚠️ requires a **navmesh** in the world (no-op without one). |
+| `lib.walkTo(ped, coords, opts?)` → boolean | **Nav-free** straight-line walk (AddMovementInput steering) until within `radius` or `maxMs`; `opts.onArrive=fn(reached)`. Verified. No obstacle avoidance. |
 | `lib.getEntityOffsetCoords(entity, dx, dy, dz)` → `Vector` | World point at a local offset from an actor (`GetOffsetFromEntityInWorldCoords`). |
 | `lib.getActorsOfClass(class)` → `{actor,…}` | All actors of a UClass/path as a Lua array (`GetGamePool`; e.g. `UE.AHVehiclePawn`). |
 | `lib.setVehicleEngineHealth(v, h)` / `lib.repairVehicle(v, full?)` | Write engine health / repair (default full=1000). |
