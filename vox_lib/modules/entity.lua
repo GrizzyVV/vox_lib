@@ -305,11 +305,11 @@ function lib.getActorsOfClass(class)
     return out
 end
 
--- SetVehicleFixed / engine-health write. ⚠️ EFFECT UNOBSERVABLE ON A BARE (undriven) VEHICLE — exhaustively checked 2026-06-30
--- (after 3s init, THREE readers all flat: GetEngineHealth=nil, GetVehicleHealthComponent():GetHealth()=0.0, actor
--- HealthComponent=0.0; SetEngineHealth(333)/(1000) changed NONE of them). The setter is callable but produces no readable
--- change on a spawned-not-driven car -> the health system likely only goes live when the vehicle is possessed/driven. Treat as
--- UNVERIFIED until confirmed on a driven vehicle (get in it, then read).
+-- SetVehicleFixed / engine-health write. ⚠️ NO OBSERVABLE EFFECT — even DRIVEN. Exhaustively checked 2026-06-30: on a bare
+-- spawn AND with the PLAYER SEATED IN THE CAR (occupancy=1), all three readers stayed flat (GetEngineHealth=nil,
+-- GetVehicleHealthComponent():GetHealth()=0.0, actor HealthComponent=0.0), and SetEngineHealth(250)/(1000) changed none of them.
+-- ⇒ this engine-health API is effectively DEAD on this build (no read, no write). Do NOT claim it works; surface vehicle
+-- damage/repair as a gap or via a different mechanism if HELIX exposes one.
 function lib.setVehicleEngineHealth(v, h) v = asVehicle(v); return pcall(function() v:SetEngineHealth(h) end) end
 function lib.repairVehicle(v, full)       v = asVehicle(v); return pcall(function() v:SetEngineHealth(full or 1000) end) end
 
