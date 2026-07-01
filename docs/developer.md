@@ -214,7 +214,7 @@ Treat it as an opaque blob: store the whole string, hand the whole string back. 
 | `lib.resetAppearance(gender?, bodyType?)` → `boolean` | Reset to engine defaults (defaults to the character's current gender/bodyType). |
 | `lib.equipCosmetic(id)` / `lib.unequipCosmetic(id)` / `lib.equipCosmetics(ids)` | Wearable items by `equipmentId`. |
 | `lib.isCosmeticEquipped(id)` → `boolean` | — |
-| `lib.setSlotColor(slot, color)` / `lib.clearSlotColor(slot)` | Per-slot material tint. `color` = `UE.FLinearColor(r,g,b,a)`. |
+| `lib.setSlotColor` / `lib.clearSlotColor` | ⛔ **disabled no-ops** — the engine method wants a slot *data-asset handle* (userdata), not a name string; unresolved (see module note). |
 | `lib.setCosmeticGender(gender)` / `lib.clearCosmetics()` | Set gender / clear all worn cosmetic slots. |
 | `lib.getCosmeticGender()` / `lib.getCosmeticBodyType()` | Current enum values. |
 | `lib.getCosmeticsSystem()` | The raw component, for anything not wrapped here. |

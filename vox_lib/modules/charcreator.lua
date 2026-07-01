@@ -88,14 +88,18 @@ function lib.unequipCosmetic(equipmentId) local cs = getSystem(); if not cs then
 function lib.equipCosmetics(equipmentIds) local cs = getSystem(); if not cs then return false end; return pcall(function() cs:EquipCosmeticItems(equipmentIds) end) end
 function lib.isCosmeticEquipped(equipmentId) local cs = getSystem(); if not cs then return false end; local ok, v = pcall(function() return cs:IsCosmeticItemEquipped(equipmentId) end); return ok and v or false end
 
--- Per-slot material tint + slot/gender control (engine cosmetics methods).
--- lib.setCosmeticGender — ✅ VERIFIED 2026-06-30 by readback: getCosmeticGender 1 -> setCosmeticGender(0) -> reads 0 -> restore 1.
--- lib.setSlotColor / clearSlotColor — callable (return true); the VISUAL tint is UNCONFIRMED (needs a cosmetic worn in `slot`).
--- color = an FLinearColor (build via UE.FLinearColor(r,g,b,a)). slot = the cosmetic slot name/id.
-function lib.setSlotColor(slot, color)  local cs = getSystem(); if not cs then return false end; return pcall(function() cs:SetMaterialColorOverrideForSlot(slot, color) end) end
-function lib.clearSlotColor(slot)        local cs = getSystem(); if not cs then return false end; return pcall(function() cs:ClearMaterialOverridesFromSlot(slot) end) end
+-- Slot/gender control. lib.setCosmeticGender — ✅ VERIFIED 2026-06-30 by readback (1 -> 0 -> restore 1).
 function lib.setCosmeticGender(gender)   local cs = getSystem(); if not cs then return false end; return pcall(function() cs:SetCosmeticGender(gender) end) end
 function lib.clearCosmetics()            local cs = getSystem(); if not cs then return false end; return pcall(function() cs:ClearAllCosmeticSlots() end) end
+
+-- ⛔ lib.setSlotColor / clearSlotColor — DISABLED guarded no-ops (2026-07-01). The string-slot signature is WRONG: the engine
+-- method `SetMaterialColorOverrideForSlot` wants params (userdata, string, string, userdata) — param 0 is a cosmetic-SLOT
+-- DATA-ASSET HANDLE (userdata), NOT a slot NAME string. Calling it with a string silently ABORTS on UnLua param validation
+-- (returns no Lua error, so the old `pcall→true` was a FALSE POSITIVE) AND spams `Invalid parameter` log errors. There is NO
+-- HELIX Lua source that calls it (nothing to copy, unlike Trace). Re-enable only once the slot-handle enumeration API is
+-- understood (get the slot data-asset from the cosmetics system, then pass it + the param name(s) + the FLinearColor).
+function lib.setSlotColor(_slot, _color) return false end
+function lib.clearSlotColor(_slot)       return false end
 
 -- Getters.
 function lib.getCosmeticGender()   local cs = getSystem(); if not cs then return nil end; local ok, v = pcall(function() return cs:GetCosmeticGender() end); return ok and v or nil end
