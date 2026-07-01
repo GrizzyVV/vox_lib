@@ -5,7 +5,7 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.6.3"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
+lib._VERSION = "vox_lib 1.6.4"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
                                  -- + UI tier (notify/textUI/alert/progress/input/context/menu/skillCheck/radial)
                                  -- + cinematic (weather/freecam/camera) + character creator (appearance + per-slot tint)
                                  -- + entities (spawn/delete + freeze/collision/visible/model/health + bone idx/coords + AI goto

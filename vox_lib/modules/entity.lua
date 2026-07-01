@@ -213,7 +213,10 @@ end
 
 -- SetEntityCollision / SetEntityVisible / GetEntityModel.
 function lib.setEntityCollision(entity, enabled) local a = asActor(entity); return a and pcall(function() a:SetActorEnableCollision(enabled ~= false) end) end
+-- setEntityVisible / isEntityVisible — ✅ VERIFIED 2026-06-30 via the `.bHidden` PROPERTY (the `IsHidden()` getter reads nil):
+-- setVisible(true) -> bHidden=false, setVisible(false) -> bHidden=true.
 function lib.setEntityVisible(entity, visible)  local a = asActor(entity); return a and pcall(function() a:SetActorHiddenInGame(visible == false) end) end
+function lib.isEntityVisible(entity) local a = asActor(entity); local h; if a then pcall(function() h = a.bHidden end) end; return h == false end
 function lib.getEntityModel(entity) local a = asActor(entity); local n; pcall(function() n = tostring(a:GetClass():GetName()) end); return n end
 
 -- Entity health. PEDS read real values via the actor health component; VEHICLES read 0 here -> use lib.getVehicleEngineHealth.
@@ -302,16 +305,17 @@ function lib.getActorsOfClass(class)
     return out
 end
 
--- SetVehicleFixed / engine-health write. ⚠️ EFFECT UNCONFIRMED (measured 2026-06-30): veh:SetEngineHealth is a callable
--- function (returns true), BUT veh:GetEngineHealth() reads nil on a freshly HVehicle-spawned car BEFORE and AFTER the set, so
--- set->get cannot prove the value changed. Likely the engine-health component only populates on an initialised/driven vehicle.
--- Treat as callable-but-unverified until confirmed on a vehicle that reports a real GetEngineHealth.
+-- SetVehicleFixed / engine-health write. ⚠️ EFFECT UNOBSERVABLE ON A BARE (undriven) VEHICLE — exhaustively checked 2026-06-30
+-- (after 3s init, THREE readers all flat: GetEngineHealth=nil, GetVehicleHealthComponent():GetHealth()=0.0, actor
+-- HealthComponent=0.0; SetEngineHealth(333)/(1000) changed NONE of them). The setter is callable but produces no readable
+-- change on a spawned-not-driven car -> the health system likely only goes live when the vehicle is possessed/driven. Treat as
+-- UNVERIFIED until confirmed on a driven vehicle (get in it, then read).
 function lib.setVehicleEngineHealth(v, h) v = asVehicle(v); return pcall(function() v:SetEngineHealth(h) end) end
 function lib.repairVehicle(v, full)       v = asVehicle(v); return pcall(function() v:SetEngineHealth(full or 1000) end) end
 
 -- PlaceObjectOnGroundProperly: raycast straight down from the actor and teleport it to the ground hit (keeps rotation).
--- lib.raycast is now VERIFIED, but placeOnGround returned false on a spawned vehicle in the smoke-test (the down-trace found
--- no hit below it) -> EFFECT UNCONFIRMED end-to-end; tune the trace start/down distance + ignore-self per target.
+-- ✅ VERIFIED 2026-06-30 (measured: an actor spawned at Z=892 dropped to Z≈0 = ground). The earlier smoke "false" was a too-short
+-- `down` distance for that spawn -> pass a `down` that reaches the ground (default 1000; use more for high spawns).
 function lib.placeOnGround(entity, opts)
     local a = asActor(entity); if not a then return false end
     opts = opts or {}

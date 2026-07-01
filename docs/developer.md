@@ -271,7 +271,7 @@ yaw number, or `{pitch=,yaw=,roll=}`.
 | `lib.deleteEntity(entity, ejectFirst?)` → boolean | Destroy a spawned actor; `ejectFirst=true` ejects occupants first. |
 | `lib.freezeEntity(ped, frozen)` | Freeze/unfreeze a ped in place (movement mode). |
 | `lib.freezeVehicle(vehicle, frozen)` | Hard-freeze a vehicle (disables every component tick + physics — `SetSimulatePhysics` alone won't hold the Chaos vehicle). |
-| `lib.setEntityCollision(entity, enabled)` / `lib.setEntityVisible(entity, visible)` | Toggle actor collision / visibility. |
+| `lib.setEntityCollision(entity, enabled)` / `lib.setEntityVisible(entity, visible)` / `lib.isEntityVisible(entity)` | Toggle/read actor collision & visibility. |
 | `lib.getEntityModel(entity)` → `string` | The actor's class name. |
 | `lib.getEntityHealth/getEntityMaxHealth/isEntityDead(entity)` | Ped health via the health component (vehicles read 0 → use `getVehicleEngineHealth`). |
 | `lib.getBoneCoords(ped, bone)` → `Vector` | World location of a ped bone/socket (e.g. `"head"`, `"spine_03"`). |
