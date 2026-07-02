@@ -43,9 +43,15 @@ local function resolve(control)
     return k:lower()
 end
 
---- isControlPressed(gtaIdOrKeyName) -> boolean (held right now)
+--- isControlPressed(gtaIdOrKeyName) -> boolean (held right now).
+--- PROBE-VERIFIED 2026-07-02: HPlayer:IsInputKeyDown(key) IS callable (string + FKey forms) -> TRUE polling for the
+--- held-check (no binding needed); the BindKey table stays for the edge semantics + as fallback.
 function lib.isControlPressed(control)
     local k = resolve(control); if not k then return false end
+    if HPlayer and HPlayer.IsInputKeyDown then
+        local ok, down = pcall(function() return HPlayer:IsInputKeyDown(k) end)
+        if ok and down ~= nil then return down == true end
+    end
     watch(k)
     return held[k] == true
 end
