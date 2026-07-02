@@ -36,5 +36,9 @@
     "modules/zones.lua",
     "modules/screenfade.lua",
     "modules/zexports.lua"
+  ],
+  "server": [
+    "modules/permissions.lua",
+    "modules/zexports.lua"
   ]
 }
