@@ -303,10 +303,20 @@ end
 
 -- GetGamePool / GetGamePoolForEntityType: all actors of a class as a Lua array. `class` = a UClass (e.g. UE.AHVehiclePawn,
 -- UE.AHCharacter) or a class-path string. Verified via UGameplayStatics.GetAllActorsOfClass.
+-- FAILED-CLASS CACHE (log/CPU guard 2026-07-02): converted GTA code passes GTA MODEL NAMES ('prop_roadcone02a') in per-tick
+-- loops -> LoadClass warns EVERY call (209x/name in one session). Unresolvable strings are cached and skipped silently.
+local _badClass = {}
 function lib.getActorsOfClass(class)
-    local cls = type(class) == "string" and LoadClass(class) or class
     local out = {}
-    if not cls then return out end
+    if type(class) == "string" and _badClass[class] then return out end
+    local cls = type(class) == "string" and LoadClass(class) or class
+    if not cls then
+        if type(class) == "string" then
+            _badClass[class] = true
+            print("[vox_lib] getActorsOfClass: unresolvable class '" .. class .. "' (GTA model name? needs a HELIX asset path) -> cached, further calls silent")
+        end
+        return out
+    end
     local w = world()
     if not w then return out end
     pcall(function()
