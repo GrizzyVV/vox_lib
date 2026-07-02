@@ -449,3 +449,12 @@ end
 function lib.getAllObjects() return lib.getActorsOfClass(UE.AStaticMeshActor) end
 -- gameplay cam rotation (GetGameplayCamRot): the local player's control rotation.
 function lib.getGameplayCamRot() local r; pcall(function() r = HPlayer:GetControlRotation() end) return r end
+-- occupant of a seat (GetPedInVehicleSeat): GTA seat -1 = driver -> first SeatOccupancy entry; else seat index (0-based GTA
+-- -> ToTable() is 1-indexed, so seat s -> entry s+1). Returns the pawn or nil.
+function lib.getPedInVehicleSeat(v, seat)
+    v = asVehicle(v); if not (v and v.SeatOccupancy) then return nil end
+    local occ; pcall(function() occ = v.SeatOccupancy:ToTable() end)
+    if not occ then return nil end
+    if seat == nil or seat == -1 then return occ[1] end
+    return occ[(tonumber(seat) or 0) + 1]
+end
