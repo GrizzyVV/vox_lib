@@ -35,6 +35,7 @@
     "modules/world.lua",
     "modules/zones.lua",
     "modules/screenfade.lua",
+    "modules/map.lua",
     "modules/zexports.lua"
   ],
   "server": [
