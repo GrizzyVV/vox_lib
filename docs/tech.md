@@ -15,16 +15,20 @@ HELIX runs **standard Lua 5.4** (not CfxLua). A few behaviours shape the whole d
 4. **WebUI is a one-way send by default.** `SendEvent`/page messaging pushes Lua→page cleanly; getting data **back** from a
    page needs the reverse channel below.
 
-## Why source-bundled, not exports
+## Delivery shapes: source-bundled, standalone, or exports
 
-Because functions don't cross the package boundary, a library of *functions* can't be consumed via `exports['vox_lib']:fn()`
-the way a data service (like a database) can. So vox_lib's modules are designed to **load into the consumer's own state** — each
-module attaches itself to the global `lib` table when its file runs. Two delivery shapes, same end state:
+vox_lib's modules attach to a global `lib` table when their files run, so the primary delivery is to **load into the consumer's
+own state**. But it can also be consumed via `exports['vox_lib']:fn()` — `modules/zexports.lua` registers every `lib.*`
+function as `exports.vox_lib:*`, and yielding UI calls survive the boundary. As of **2026-07-07** (in-engine, UE 5.7.4
+CL 47537391) HELIX also proxies metatable objects across the export boundary (methods become synchronous, stateful remote
+stubs), so even OOP results can cross. The trade-off is **one RPC hop per proxied call**, so hot per-frame code is still faster
+source-bundled. Three delivery shapes:
 
 - **Standalone package** — vox_lib loads as its own package; `lib` is complete within it. It includes `modules/scheduler.lua`
   so it's self-sufficient.
 - **Source-bundled** — a build pipeline copies the module files into the target package and lists them in that package's
   `package.json`. The host already provides `Wait`/`CreateThread`, so `scheduler.lua` is omitted (its guard would no-op anyway).
+- **Exports resource** — run vox_lib standalone and call `exports.vox_lib:*` from any other package (one RPC hop per call).
 
 `init.lua` creates `lib` and must load first; `class.lua` underpins `array`/`timer`, so it's next; the rest follow. The shipped
 `package.json` encodes the canonical order.

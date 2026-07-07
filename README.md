@@ -31,9 +31,11 @@ control and a cinematic freecam — all styled for HELIX and driven by a single 
 
 ## How it loads (read this first)
 
-HELIX packages are **sandboxed Lua states — functions don't cross the package boundary.** So vox_lib is **not** an `exports`
-resource like a database service; you can't `exports['vox_lib']:notify()` from another package. There are two supported ways to
-use it, and both end with `lib.*` living **inside your own package's state**:
+HELIX packages are **sandboxed Lua states**, but vox_lib **is** usable as an `exports` resource: `modules/zexports.lua`
+registers every `lib.*` function as `exports.vox_lib:*`, so another package can call `exports['vox_lib']:notify(...)` directly
+(yielding UI calls survive the boundary). As of **2026-07-07** HELIX also proxies metatable objects across the export boundary
+(methods become synchronous, stateful remote stubs) — so even OOP results can cross. **Caveat:** each proxied call is one RPC
+hop, so hot per-frame code is still faster source-bundled. There are three supported ways to use it:
 
 **A) Standalone package** — drop `vox_lib/` into `scripts/` and list it in `config.json`. It loads as a complete, self-contained
 library (including its own optional scheduler). Best for a single-package project or a demo world.
@@ -46,7 +48,11 @@ library (including its own optional scheduler). Best for a single-package projec
 in dependency order (handy when a build pipeline emits a single package). The host then provides the scheduler, so you can omit
 `modules/scheduler.lua`.
 
-Either way, `init.lua` must load first (it creates `lib`), then `modules/class.lua`, then the rest — see
+**C) As an exports resource** — run `vox_lib` as its own package (like A) and call it from any other package via
+`exports.vox_lib:notify(...)` etc. (`modules/zexports.lua` registers the whole `lib.*` surface). Simplest cross-package wiring;
+each call is one RPC hop, so prefer A/B for hot per-frame paths.
+
+For A and B, `init.lua` must load first (it creates `lib`), then `modules/class.lua`, then the rest — see
 [`vox_lib/package.json`](vox_lib/package.json) for the canonical order.
 
 ## Quick start

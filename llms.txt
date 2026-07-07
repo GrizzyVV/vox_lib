@@ -2,7 +2,7 @@
 
 > A free, HELIX-native UI + utility library for HELIX (UE5) — a clean-room equivalent of the ox_lib `lib.*` contract that FiveM resources expect. Provides UI (notify, text UI, dialogs, menus, progress, skill check, radial), cinematic control (eased weather / sky-params / time + freecam), a character creator over HELIX's native cosmetics, entity spawning (vehicles / objects / peds + vehicle exit/warp/attach), animations (montages with eased blend), spatial helpers (raycast, worldToScreen, markers, points/zones, screen fade), and the foundation utilities — all on one global `lib` table.
 
-vox_lib loads into a consumer's own Lua state because HELIX packages are sandboxed and functions don't cross the package boundary — so it is used either as a standalone package or source-bundled, never via `exports`. The deployable resource is the `vox_lib/` folder. For agent navigation + a module map, start with AGENTS.md.
+vox_lib can be used three ways: as a standalone package, source-bundled into a consumer's own Lua state, or as an `exports` resource — `modules/zexports.lua` registers every `lib.*` as `exports.vox_lib:*` (yielding UI calls survive the boundary; as of 2026-07-07 HELIX also proxies metatable objects across it, with each proxied method call costing one RPC hop, so hot per-frame paths still prefer source-bundling). The deployable resource is the `vox_lib/` folder. For agent navigation + a module map, start with AGENTS.md.
 
 ## Documentation
 - [README](https://github.com/GrizzyVV/vox_lib-HELIX-/blob/main/README.md): overview, install, quick start, component catalog
@@ -17,7 +17,7 @@ vox_lib loads into a consumer's own Lua state because HELIX packages are sandbox
 - [web/](https://github.com/GrizzyVV/vox_lib-HELIX-/tree/main/vox_lib/web): the WebUI pages for the visual components (shared theme in `web/_shared/helix-life.css`)
 
 ## Key concepts
-- Load model: source-bundled or standalone; everything attaches to the global `lib` (no `exports` — functions don't cross HELIX's package boundary).
+- Load model: source-bundled, standalone, or exports resource; everything attaches to the global `lib`, and `modules/zexports.lua` re-exposes it as `exports.vox_lib:*` (one RPC hop per call; metatable objects proxy across the boundary as of 2026-07-07).
 - WebUI reverse channel: Lua→page via `SendEvent` (`{name, args}` envelope), page→Lua via `hEvent(name, data)`.
 - Return-value calls (`alertDialog`/`inputDialog`/`progressBar`/`skillCheck`) yield — call them from inside a thread.
 - Load order: `init.lua` → `class.lua` → rest (see `vox_lib/package.json`).

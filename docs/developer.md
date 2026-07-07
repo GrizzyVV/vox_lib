@@ -311,9 +311,10 @@ lib.deleteEntity(car, true)               -- eject occupants, then destroy
 > a C++ access violation that `pcall` cannot catch). Until the correct way to pass the target vehicle is found, the function
 > returns an error instead of calling the native. **Do not re-enable without a verified-safe invocation.**
 
-> **Exposing as a cross-package export** is a one-liner in your resource:
-> `exports("myresource", "SpawnVehicle", lib.spawnVehicle)` — then `exports["myresource"]:SpawnVehicle(...)` from anywhere.
-> (vox_lib itself is source-bundled, so it doesn't register exports for you — you choose what to expose.)
+> **Exposing as a cross-package export:** vox_lib now ships `modules/zexports.lua`, which registers the whole `lib.*` surface
+> as `exports.vox_lib:*` — so `exports["vox_lib"]:SpawnVehicle(...)` works from any package (yielding UI calls survive the
+> boundary; as of 2026-07-07 metatable objects proxy across it too, one RPC hop per call). To expose your *own* function it's
+> still a one-liner: `exports("myresource", "SpawnVehicle", lib.spawnVehicle)` — then `exports["myresource"]:SpawnVehicle(...)`.
 
 ---
 
@@ -460,5 +461,6 @@ e.g. `lib.string.upper` and the extras below both work.
 ## Gotchas
 
 - **Return-value calls yield** — always wrap `alertDialog`/`inputDialog`/`progressBar`/`skillCheck` in a thread.
-- **Source-bundled, not exports** — `lib` lives in your package's state; you can't call it across the package boundary.
+- **Source-bundled OR exports** — `lib` can live in your package's state (fastest), or you can call it across packages via
+  `exports.vox_lib:*` (`modules/zexports.lua`; one RPC hop per call, so prefer source-bundling for hot per-frame paths).
 - **Load order** — `init.lua` → `class.lua` → rest. Use the shipped [`package.json`](../vox_lib/package.json) order.

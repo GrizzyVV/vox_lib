@@ -9,8 +9,13 @@
          transport (handler stays local, trigger+result cross as data). The converter decomposes lib.callback locally.
        • YIELD across an export SURVIVES (probe-verified 2026-07-01, r=42): a yielding fn called via an export blocks the
          caller and returns its value. So the yielding UI fns (progress/input/menu/alert/…) export cleanly — no round-trip.
-       • OOP does NOT export: a returned method-bearing object (lib.class/array) loses its methods crossing the boundary, so
-         those stay SOURCE-BUNDLED (used inline to build objects in the consumer's state). Everything else exports. ]]
+       • OOP was HISTORICALLY excluded: a returned method-bearing object (lib.class/array) used to lose its methods crossing
+         the boundary, so those stayed SOURCE-BUNDLED (used inline to build objects in the consumer's state). ⭐ UPDATED
+         2026-07-07 (in-engine, UE 5.7.4 CL 47537391): the export boundary now PROXIES metatable objects — a returned table
+         with a metatable crosses with data fields copied and methods callable as synchronous remote-dispatch stubs (stateful;
+         yielding methods survive). So returning lib.class/array instances across the boundary is now VIABLE. Code behavior is
+         UNCHANGED here (this helper still exports functions only, not instances) — documented as now-possible; each proxied
+         method is one RPC hop, so hot per-frame paths still prefer source-bundled instances. Everything else exports. ]]
 
 local function _exportAll(tbl, prefix, seen)
     seen = seen or {}

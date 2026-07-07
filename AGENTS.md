@@ -8,12 +8,16 @@ contract that FiveM/ox_lib resources expect, rebuilt for HELIX's runtime (standa
 single global table: **`lib`**.
 
 ## Critical: the load model (read this before reasoning about the code)
-HELIX packages are **sandboxed Lua states, and functions do not cross the package boundary.** So vox_lib is **not** an `exports`
-resource — you cannot call `exports['vox_lib']:fn()` from another package. Instead, its modules load **into the consumer's own
-state** and attach to the global `lib`. Two supported ways to use it, both ending with `lib.*` living in the consumer's state:
+HELIX packages are **sandboxed Lua states**, but vox_lib **is** usable as an `exports` resource — `modules/zexports.lua`
+registers every `lib.*` function as `exports.vox_lib:*`, so `exports['vox_lib']:fn(...)` works from another package (yielding
+UI calls survive the boundary). As of **2026-07-07** (in-engine, UE 5.7.4 CL 47537391) HELIX also **proxies metatable objects**
+across the export boundary: a returned table with a metatable crosses with data fields copied and methods callable as
+synchronous, stateful remote-dispatch stubs (a yielding method survives the RPC); plain metatable-less tables still lose their
+functions. **Caveat:** each proxied method is one RPC hop — hot per-frame code is still faster source-bundled. Three ways to use it:
 - **Standalone package** — drop the `vox_lib/` folder into `scripts/` and list `"vox_lib"` in `config.json`. Self-contained
   (ships its own optional scheduler).
 - **Source-bundled** — copy the module files into your own package and list them in your `package.json` in dependency order.
+- **Exports resource** — run it as a standalone package and call `exports.vox_lib:*` from any other package (one RPC hop/call).
 
 `init.lua` runs first (creates `lib`), then `modules/class.lua`, then the rest. The canonical order is in `vox_lib/package.json`.
 
