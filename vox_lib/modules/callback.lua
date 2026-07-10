@@ -1,6 +1,9 @@
 --[[ lib.callback — bidirectional request/response callbacks (clean-room from the ox_lib Callback contract).
-     ox_lib callbacks RETURN their result (unlike ESX's reply-cb). Rides the PROBE-VERIFIED net-event transport (the native
-     RegisterCallback/TriggerCallback pair is BROKEN on HELIX; see HELIX_RUNTIME §3 + framework_seam.esx_callback_transport).
+     ox_lib callbacks RETURN their result (unlike ESX's reply-cb). Rides a net-event transport by design — NOT native
+     Callbacks. Native `RegisterCallback`/`TriggerCallback` round-trip fine for SYNC handlers (probe-verified 2026-07-08),
+     but they are LESS capable: the responder runs in a non-yieldable context (a yielding handler ERRORS) and only a
+     SINGLE return value is marshalled. This net-event transport preserves MULTI-VALUE returns + adds a timeout, matching
+     ox_lib's contract. (Post-conversion sync DB means handlers rarely yield; if one does, it must stay synchronous here.)
 
      API:
        lib.callback.register(name, fn)            -- server: fn(source, ...) -> result ; client: fn(...) -> result
@@ -27,8 +30,8 @@ local function nextId() _reqId = _reqId + 1; return _reqId end
 -- Receivers (both directions registered — no runtime side test). The responder runs the registered fn and ships its RETURN.
 RegisterServerEvent(SREQ, function(source, name, reqId, ...)
     local fn = _registry[name]; if not fn then return end
-    local res = { fn(source, ...) }
-    TriggerClientEvent(source, SRES, reqId, table.unpack(res))
+    local res = table.pack(fn(source, ...))   -- table.pack/.n preserves nil holes + arity (`{...}` truncates at the 1st nil)
+    TriggerClientEvent(source, SRES, reqId, table.unpack(res, 1, res.n))
 end)
 RegisterClientEvent(SRES, function(reqId, ...)
     local resolve = _pending[reqId]; if not resolve then return end
@@ -36,8 +39,8 @@ RegisterClientEvent(SRES, function(reqId, ...)
 end)
 RegisterClientEvent(CREQ, function(name, reqId, ...)
     local fn = _registry[name]; if not fn then return end
-    local res = { fn(...) }
-    TriggerServerEvent(CRES, reqId, table.unpack(res))
+    local res = table.pack(fn(...))
+    TriggerServerEvent(CRES, reqId, table.unpack(res, 1, res.n))
 end)
 RegisterServerEvent(CRES, function(source, reqId, ...)
     local resolve = _pending[reqId]; if not resolve then return end
@@ -67,17 +70,17 @@ local callback = setmetatable({
     await = function(name, arg2, ...)
         if SIDE ~= "server" and onCooldown(name, arg2) then return end
         local id, result, done = nextId(), nil, false
-        _pending[id] = function(...) result = { ... }; done = true end
+        _pending[id] = function(...) result = table.pack(...); done = true end
         send(name, arg2, id, ...)
         local start = os.clock() * 1000
         while not done do
-            Wait(0)
+            Wait(1)   -- Wait(0) BUSY-SPINS on HELIX (doesn't yield -> 100% CPU lockup); Wait(1) yields ~1 frame
             if os.clock() * 1000 - start >= AWAIT_TIMEOUT then
                 _pending[id] = nil
                 return nil
             end
         end
-        return table.unpack(result)
+        return table.unpack(result, 1, result.n)
     end,
 }, {
     __call = function(_, name, arg2, cb, ...)
