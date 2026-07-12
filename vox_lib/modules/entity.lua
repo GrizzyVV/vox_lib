@@ -136,6 +136,58 @@ function lib.getVehicleEngineHealth(v) v = asVehicle(v); local h; pcall(function
 function lib.setVehicleFuel(v, f) v = asVehicle(v); return pcall(function() v:SetFuel(f) end) end
 function lib.setVehiclePlate(v, p) v = asVehicle(v); return pcall(function() v:SetPlate(tostring(p)) end) end
 
+-- ── per-instance vehicle PERFORMANCE tuning (Chaos movement component) — PIE-verified PER-INSTANCE 2026-07-11 ──────────
+-- Each vehicle pawn owns its own ChaosWheeledVehicleMovementComponent, so these apply PER-VEHICLE: one car's tuning does
+-- NOT affect another of the same model (drive-confirmed with two identical cars tuned oppositely). Use for mech-shop upgrades.
+-- ⚠ REPLICATION: the movement component is replicated, so HELIX *should* propagate these to all clients — but this is
+--   UNVERIFIED in real multiplayer (tested only in single-instance PIE, where host = both sides). Apply SERVER-side.
+--   >>> MUST be tested in a live multiplayer env (players / HELIX staff) before relying on it — see README. <<<
+-- ⚠ PERSISTENCE: not stored here. Serialize `params` to the DB keyed by a vehicle identifier (plate / dealership-minted VIN)
+--   and re-apply on spawn/load (a Chaos re-init can reset the override). vox_lib takes the values; the CALLER owns persistence.
+local function vehicleMovementComponent(entity)
+    local a = (type(entity) == "table" and (entity.Object or entity)) or entity
+    if not a or not a.GetComponentsByClass then return nil end
+    local mv
+    pcall(function()
+        local comps = a:GetComponentsByClass(UE.UActorComponent)
+        for i = 1, comps:Length() do
+            local c = comps:Get(i)
+            if c and tostring(c:GetClass():GetName()):find("MovementComponent") then mv = c; break end
+        end
+    end)
+    return mv
+end
+
+-- Apply per-vehicle performance/handling. `params` = any subset of:
+--   maxEngineTorque, dragCoefficient, downforceCoefficient, differentialFrontRearSplit  (GLOBAL scalars, 1-arg setters)
+--   driveTorque, brakeTorque                                                            (PER-WHEEL — applied to every wheel)
+-- Signatures MUSE-verified 2026-07-11: Set{MaxEngineTorque,DragCoefficient,DownforceCoefficient,DifferentialFrontRearSplit}(v)
+--   are global; SetDriveTorque(v, wheelIndex) / SetBrakeTorque(v, wheelIndex) are per-wheel; GetNumWheels()->int.
+-- Returns { ok, applied = { key = value, ... }, error? }.  NO reliable getter exists → the caller should cache/persist values.
+function lib.setVehiclePerformance(vehicle, params)
+    if type(params) ~= "table" then return { ok = false, error = "params table required" } end
+    local mv = vehicleMovementComponent(vehicle)
+    if not mv then return { ok = false, error = "no vehicle movement component" } end
+    local applied = {}
+    local globals = { maxEngineTorque = "SetMaxEngineTorque", dragCoefficient = "SetDragCoefficient",
+                      downforceCoefficient = "SetDownforceCoefficient", differentialFrontRearSplit = "SetDifferentialFrontRearSplit" }
+    for k, fn in pairs(globals) do
+        if params[k] ~= nil and mv[fn] then
+            if pcall(function() mv[fn](mv, params[k]) end) then applied[k] = params[k] end
+        end
+    end
+    local perWheel = { driveTorque = "SetDriveTorque", brakeTorque = "SetBrakeTorque" }
+    local nWheels = 0; pcall(function() nWheels = mv:GetNumWheels() end)
+    for k, fn in pairs(perWheel) do
+        if params[k] ~= nil and mv[fn] and nWheels > 0 then
+            local ok = true
+            for w = 0, nWheels - 1 do if not pcall(function() mv[fn](mv, params[k], w) end) then ok = false end end
+            if ok then applied[k] = params[k] end
+        end
+    end
+    return { ok = true, applied = applied }
+end
+
 -- ── attach / detach (props on peds/vehicles, etc.) ────────────────────────────────────────────────────────────────
 -- rule: "snap" | "keepWorld" | "keepRelative" (default "snap"). Attaches `child` actor to `parent` actor.
 function lib.attachEntity(child, parent, rule)

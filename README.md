@@ -15,6 +15,8 @@ control and a cinematic freecam — all styled for HELIX and driven by a single 
 | **Character** | character creator (`openCharacterCreator`) + appearance capture/persist/reapply (`getAppearance`/`applyAppearance`) over HELIX's native cosmetics |
 | **Entities** | spawn `spawnVehicle` · `spawnObject` · `spawnPed` · vehicle `exitVehicle`/`ejectAll`/`warpIntoVehicle` + getters · `attachEntity`/`detachEntity` · `deleteEntity` |
 | **Vehicle paint** | `setVehicleColor` (whole) · `setVehicleComponentColor` (one part) · `setFleetColor` · `getVehicleColor` · `interpVehicleColor` · `vehicleParty` — per-instance colour ⚠️ *see the two limitations below* |
+| **Vehicle tuning** | `setVehiclePerformance` — per-instance engine/drive/brake torque + drag/downforce/differential (Chaos movement comp) ⚠️ *replication untested in live MP — see below* |
+| **Weapon attachments** | `getEquippedWeapon` · `getWeaponAttachments`/`getWeaponSockets`/`getActiveAttachment`/`getAttachmentState` · `toggleAttachment` · `setActiveAttachment` (equip one-per-socket) · `setAttachmentTransform` · `exportWeaponAttachments` → JSON · `openAttachmentMenu` (dev swap-menu) · `addWeaponAttachment` (⚠️ non-rendering on current build — pre-place in BP instead) |
 | **Animation** | `playAnim` / `stopAnim` — montage wrapper over `Animation.Play` (⚠️ experimental — wired but not yet visually verified) |
 | **World / spatial** | `raycast` / `raycastFromCamera` · `worldToScreen` · `spawnMarker` · `lib.points` / `lib.zones` (box/sphere) · `fadeOut`/`fadeIn` |
 | **Foundation** | `lib.class` · `lib.table` · `lib.array` · `lib.string` · `lib.math` · `lib.cache` · `lib.print` · `lib.locale` · `lib.timer` · `lib.waitFor` · `lib.callback` · `lib.hook` |
@@ -28,6 +30,14 @@ control and a cinematic freecam — all styled for HELIX and driven by a single 
 >    bug: when a vehicle moves, the instance container reassigns instance indices and the per-instance colour data is **not** carried
 >    with it, so the moving car goes unpainted (verified in-engine). Stationary cars keep their colour. *Remove this note once HELIX
 >    keeps per-instance custom data bound to the vehicle across movement (can't be fixed from Lua).*
+
+> ### ⚠️ Vehicle performance (`setVehiclePerformance`) — replication needs a live test
+> Per-instance tuning is **confirmed** (two identical cars tuned oppositely drove differently — no cross-effect). But the Chaos
+> movement component's replication has **only been tested in single-instance PIE** (host = both sides), which can't reveal a
+> client-observed mismatch. **Apply it server-side, and TEST in a real multiplayer environment** (players / HELIX staff) before
+> relying on all clients seeing the tuned behaviour. **Persistence is caller-owned** — vox_lib applies the values; serialize them
+> to your DB keyed by a vehicle identifier (plate / dealership-minted VIN) and re-apply on spawn/load. *Remove this note once
+> replication is confirmed in live MP.*
 
 ## How it loads (read this first)
 

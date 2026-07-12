@@ -7,13 +7,19 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.6.6"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
+lib._VERSION = "vox_lib 1.6.7"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
                                  -- + UI tier (notify/textUI/alert/progress/input/context/menu/skillCheck/radial)
                                  -- + cinematic (weather/freecam/camera) + character creator (appearance + per-slot tint)
                                  -- + entities (spawn/delete + freeze/collision/visible/model/health + bone idx/coords + AI goto
                                  --   + offset/actors-of-class/closest + speed/forward + ped motion-state + repair + place-on-ground
                                  --   + world->screen) + anim (play/stop/isPlaying)
                                  -- + vehicle paint (per-instance colour: component/body/fleet/individual + interp + party)
+                                 -- 1.6.7: + vehicle PERFORMANCE tuning (per-instance Chaos movement comp: engine/drive/brake
+                                 --   torque + drag/downforce/differential; PIE per-instance-verified; ⚠ replication untested in
+                                 --   live MP — see README; persistence = caller-owned, DB-keyed by plate/VIN)
+                                 --   + WEAPON attachments (getWeaponAttachments/Sockets/State + toggle/setActiveAttachment
+                                 --   [one-active-per-socket] + exportWeaponAttachments JSON + openAttachmentMenu dev swap-menu;
+                                 --   runtime addWeaponAttachment ⚠ non-rendering on this build — pre-place in BP instead)
 
 -- Modules attach themselves to the global `lib` table when their file is loaded after this one.
 -- (A standalone deployable build can drive load order via package.json; a host/consumer build bundles in dependency order.)
