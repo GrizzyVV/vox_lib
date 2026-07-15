@@ -62,6 +62,8 @@
     "modules/resourcestate.lua",
     "modules/permissions.lua",
     "modules/assets.lua",
+    "modules/weapon.lua",
+    "modules/assetdump.lua",
     "modules/zexports.lua"
   ]
 }

@@ -336,3 +336,117 @@ function lib.addWeaponSpare(entity, n)
     _statSet(it, AMMO_SPARE, cur + (tonumber(n) or 0))
     return { ok = true }
 end
+
+-- ── WEAPON GIVE / REMOVE (server-authoritative inventory mutation) ────────────────────────────────────────────────────
+-- Codifies the give/remove recipe LIVE-VALIDATED 2026-07-13 (gave + removed a weapon net-zero; the surgical by-name remove
+-- left the player's OTHER weapons untouched — Matt's eyes). This previously lived ONLY as prose in the converter's
+-- feature-ledger and got re-derived every session; this is its durable, callable home.
+--
+-- MODEL: a HELIX weapon is an `HInventoryItemDefinition` DATA ASSET (`ID_Weapon_*` under /HelixWeapons/Weapons). You GIVE
+-- one by loading its def, adding it to the player's inventory manager, then to the quickbar (so it's drawable). This is the
+-- HELIX-NATIVE replacement for GTA `GiveWeaponToPed(ped, hash, …)` — you pass a HELIX weapon id resolved from the live pool
+-- (`lib.enumerateAssets('weapon')`), NEVER a GTA hash (the hash table IS the FiveMism). Server-authoritative + PERSISTS to
+-- the character save → CALL SERVER-SIDE (a client-side call cannot mutate the saved inventory).
+--   • defs are DATA ASSETS → `UE.UObject.Load(path)` — NOT `UClass.Load` (returns nil; that's the blessed GiveItemByKey trap).
+--   • inventory-manager access is via the pawn's COMPONENT (the `HInventory`/`UHInventorySystemGlobals` globals are
+--     half-wired on this build) → resolve with `GetComponentByClass`, fall back to the globals path.
+
+-- Resolve a weapon reference to a loadable def PATH. Accepts a full def path (contains '/'), or a HELIX weapon id
+-- ("ID_Weapon_Rifle_Patriot") resolved against the live enumerated pool. Returns path or nil.
+local function _weaponDefPath(weapon)
+    if type(weapon) ~= "string" then return nil end
+    if weapon:find("/", 1, true) then return weapon end             -- already a def path
+    if lib.enumerateAssets then
+        local pool = lib.enumerateAssets("weapon")
+        if pool then for _, a in ipairs(pool) do if a.id == weapon then return a.path end end end
+    end
+    return nil
+end
+
+-- Resolve the SERVER-side inventory manager component for an entity (pawn or controller; default local player).
+local function _resolveInventory(entity)
+    local pawn, ctrl
+    if entity then
+        pcall(function() if entity.GetController then ctrl = entity:GetController() end end)
+        if ctrl then pawn = entity else ctrl = entity end           -- had a controller → entity was the pawn
+    end
+    ctrl = ctrl or (GetLocalPlayer and GetLocalPlayer())
+    if not pawn then pcall(function() pawn = ctrl and ctrl.K2_GetPawn and ctrl:K2_GetPawn() end) end
+    local im
+    if pawn then pcall(function() im = pawn:GetComponentByClass(UE.UHInventoryManagerComponent) end) end
+    if not im then pcall(function() im = UE.UHInventorySystemGlobals.GetInventory(ctrl) end) end   -- fallback
+    local qb
+    if type(HInventory) == "table" then pcall(function() qb = HInventory.GetQuickbar(ctrl) end) end
+    return im, qb
+end
+
+-- Collect-then-remove weapon instances (mutating the live TArray while iterating is unsafe). `matchId` nil = ALL weapons.
+-- `max` nil = no cap. Returns the count removed.
+local function _removeWeapons(im, matchId, max)
+    local removed = 0
+    pcall(function()
+        local items = im:GetAllItems()
+        local hits = {}
+        for i = 1, items:Length() do
+            local it = items:Get(i)
+            local nm; pcall(function() nm = tostring(it:GetItemDef():GetName()) end)
+            if nm and (matchId and nm == matchId or (not matchId and nm:sub(1, 10) == "ID_Weapon_")) then
+                hits[#hits + 1] = it
+            end
+        end
+        for _, it in ipairs(hits) do
+            if max and removed >= max then break end
+            pcall(function() im:RemoveItemInstance(it, 1) end)
+            removed = removed + 1
+        end
+    end)
+    return removed
+end
+
+-- GIVE a weapon (by HELIX id or def path) to a player. `count` defaults 1. `opts.quickbar ~= false` adds it to the quickbar
+-- (drawable). SERVER-side + persists. Returns { ok = true, instance } or { ok = false, error }.
+function lib.giveWeapon(entity, weapon, count, opts)
+    opts = opts or {}
+    local path = _weaponDefPath(weapon)
+    if not path then return { ok = false, error = "unknown weapon (not in pool / not a def path): " .. tostring(weapon) } end
+    local im, qb = _resolveInventory(entity)
+    if not im then return { ok = false, error = "no inventory manager (call server-side)" } end
+    local def; pcall(function() def = UE.UObject.Load(path) end)     -- DATA ASSET → UObject.Load, not UClass.Load
+    if not def then return { ok = false, error = "weapon def failed to load: " .. path } end
+    local inst; pcall(function() inst = im:AddItemDefinition(def, count or 1) end)
+    if not inst then return { ok = false, error = "AddItemDefinition returned nil" } end
+    local quickbarred = false
+    if opts.quickbar ~= false and qb then pcall(function() qb:AddItemToFirstEmptySlot(inst); quickbarred = true end) end
+    -- ⚠ RETURN PLAIN DATA ONLY — NEVER a live UObject across the export boundary. Returning the item `instance`
+    -- (a UHInventoryItemInstance) HARD-CRASHED the editor (EXCEPTION_ACCESS_VIOLATION in recursive UnLua marshalling,
+    -- 2026-07-15, confirmed via crash log): the object-RPC layer walks the UObject reference graph and derefs bad memory.
+    -- The 2026-07-07 object-RPC proxying is for LUA metatable objects, NOT raw UE UObjects. A caller that needs the live
+    -- instance must call giveWeapon SOURCE-BUNDLED (same Lua state), never via exports.vox_lib.
+    return { ok = true, id = tostring(weapon), quickbar = quickbarred }
+end
+
+-- REMOVE weapon(s) by HELIX id from a player — surgical, matches ONLY the named weapon (other items untouched). `count`
+-- nil = remove ALL instances of that weapon. SERVER-side + persists. Returns { ok = true, removed = n }.
+function lib.removeWeapon(entity, weapon, count)
+    -- Accept a bare id ("ID_Weapon_Sniper_Ronin-777") or a full def path (".../ID_Weapon_….ID_Weapon_…") → take the trailing
+    -- name segment. ⚠ do NOT use `%w+` — HELIX weapon ids contain HYPHENS (Ronin-777, CS-446, LWS-32, DMC-68…) which `%w`
+    -- drops, truncating the id so the exact-name match silently fails. Validation caught this 2026-07-15 (remove reported
+    -- ok but removed 0). `[^%./]+$` keeps hyphens/digits and strips any path/package prefix.
+    local wantId
+    if type(weapon) == "string" then
+        local base = weapon:match("([^%./]+)$") or weapon
+        if base:sub(1, 10) == "ID_Weapon_" then wantId = base end
+    end
+    if not wantId then return { ok = false, error = "expected a HELIX weapon id: " .. tostring(weapon) } end
+    local im = _resolveInventory(entity)
+    if not im then return { ok = false, error = "no inventory manager (call server-side)" } end
+    return { ok = true, removed = _removeWeapons(im, wantId, count) }
+end
+
+-- REMOVE ALL weapons from a player — the GTA `RemoveAllPedWeapons` analogue. Strips every `ID_Weapon_*` instance (their
+-- quickbar slots auto-clear → the player can't re-draw). Non-weapon items untouched. SERVER-side + persists.
+function lib.removeAllWeapons(entity)
+    local im = _resolveInventory(entity)
+    if not im then return { ok = false, error = "no inventory manager (call server-side)" } end
+    return { ok = true, removed = _removeWeapons(im, nil, nil) }
+end

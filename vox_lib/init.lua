@@ -7,7 +7,15 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.7.0"   -- 1.7.0: + asset enumeration (modules/assets.lua: enumerateAssets/serializeAssetTable/
+lib._VERSION = "vox_lib 1.7.1"   -- 1.7.1: + WEAPON give/remove (modules/weapon.lua: giveWeapon/removeWeapon/removeAllWeapons
+                                 --   — HELIX-id inventory mutation, server-authoritative; live-validated 2026-07-15 net-zero
+                                 --   give+remove via exports) + vox_dumpassets command (modules/assetdump.lua, server-only:
+                                 --   dumps the live pool to a curatable .lua) + FIX: weapon.lua now loads SERVER-side
+                                 --   (package.json) — was client-only, so server give/remove/ammo exports didn't exist.
+                                 --   ⚠ HELIXisms found+fixed live: (a) exports MUST return plain data — returning a UObject
+                                 --   crashes the editor (giveWeapon returns {ok,id,quickbar}); (b) weapon-id match must keep
+                                 --   HYPHENS (Ronin-777/CS-446 — %w drops them).
+                                 -- 1.7.0: + asset enumeration (modules/assets.lua: enumerateAssets/serializeAssetTable/
                                  --   writeAssetTable/registerAssetFamily — runtime UE AssetRegistry pool → the "run a command,
                                  --   asset tables ready" engine; weapon/item/vehicle) + weapon AMMO (modules/weapon.lua:
                                  --   getWeaponAmmo/getWeaponAmmoTotal/setWeaponAmmo/setWeaponSpare/addWeaponSpare — item-instance
