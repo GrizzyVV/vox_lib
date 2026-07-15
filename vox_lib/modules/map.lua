@@ -1,5 +1,11 @@
 --[[ lib.map / blips — GTA-style map blips over HELIX's HMap marker API. CLIENT-SIDE.
 
+     ✅ RENDER-VALIDATED (2026-07-11, PIE, Matt-confirmed): the engine call this module rides — `HMap.AddMarkerAt(FVector,
+     opts)` (line ~44) — RENDERS on the minimap (`MarkerType=0` = a white square at the location; `SizeMultiplier` scales it);
+     `RemoveMarkerAt(handle)` removes it. So `lib.addBlip`/`addBlipForEntity` render for real. (This was validated at the
+     primitive layer but not previously noted here — banked 2026-07-13. Converter maps AddBlipForCoord/CreateBlip/
+     AddBlipForEntity/SetBlipSprite -> exports.vox_lib:addBlip/... so a converted resource's blips ride this same path.)
+
      WHY IT'S SHAPED THIS WAY:
      - HMap has NO mutation methods (a marker is create-with-OPTIONS + remove only — AddMarker/AddMarkerAt/RemoveMarker/
        RemoveMarkerAt). FiveM's flow is AddBlipForCoord() -> then SetBlipSprite/Colour/Scale/name mutate that blip. So a blip

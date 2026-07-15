@@ -35,5 +35,7 @@ end
 
 -- lib.getLocale(resource, key): cross-resource lookup (simplified — returns from the shared store)
 function lib.getLocale(resource, key) return store[key] end
+-- lib.getLocales(): the whole active-locale dict (ox_lib returns the loaded phrase table)
+function lib.getLocales() return store end
 
 return lib.locale

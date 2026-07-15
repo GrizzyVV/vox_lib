@@ -49,5 +49,6 @@ end
 function lib.progressBar(opts)    return runProgress("bar", opts) end
 function lib.progressCircle(opts) return runProgress("circle", opts) end
 function lib.cancelProgress()     _active = nil end
+function lib.progressActive()     return _active ~= nil end   -- ox_lib: is a progress bar currently running?
 
 return lib.progressBar

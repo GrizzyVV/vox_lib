@@ -248,3 +248,91 @@ function lib.openAttachmentMenu(actor)
     lib.showContext(ATTACH_MENU_ROOT)
     return { ok = true }
 end
+
+-- ── WEAPON AMMO (item-instance stat-tags) ────────────────────────────────────────────────────────────────────────────
+-- PIE-validated 2026-07-13 + re-validated 2026-07-14 (Patriot: clip 14/30, spare 690 — read IDENTICALLY client & server).
+-- HELIX weapon ammo is INTEGER stat-tag STACKS on the weapon's OWNING ITEM INSTANCE (Lyra pattern) — plain COUNTS, NOT
+-- GTA's enumerated ammo types. Reached via the player's ACTIVE quickbar slot item (the equipment component is on the pawn;
+-- `GetEquippedItems(controller)` returns 0). Ammo READS work either side (replicated); WRITES are server-authoritative
+-- (they mutate the saved inventory) — call the setters SERVER-side. Tag reads MUST use `RequestGameplayTag` (never build a
+-- GameplayTag via MUSE Python — that crashes the editor). Write mechanism (Add/RemoveStatTagStack) = PROBE #1 validated.
+
+local AMMO_CLIP  = "Inventory.Stat.Weapon.Ammo.ClipCurrent"   -- rounds in the magazine
+local AMMO_CAP   = "Inventory.Stat.Weapon.Ammo.ClipCapacity"  -- magazine size
+local AMMO_SPARE = "Inventory.Stat.Weapon.Ammo.Spare"         -- reserve ammo
+
+local function _ammoTag(name) local t; pcall(function() t = UE.UHelixResourceUtility.RequestGameplayTag(name) end); return t end
+
+-- Resolve a quickbar component from a caller-supplied handle. Accepts a controller (quickbar owner), a pawn (→ its
+-- controller), or nil (→ the local player). The FiveM ped/player handle a converted resource passes (PlayerPedId()/
+-- GetPlayerPed()) can be a pawn — normalise it. Returns the quickbar or nil.
+local function _resolveQuickbar(entity)
+    local function qbOf(e) local qb; pcall(function() qb = e and HInventory.GetQuickbar(e) end); return qb end
+    if type(HInventory) ~= "table" then return nil end
+    local qb = qbOf(entity)
+    if qb then return qb end
+    if entity then                                              -- given a pawn? try its controller
+        local ctrl; pcall(function() ctrl = entity.GetController and entity:GetController() end)
+        qb = qbOf(ctrl); if qb then return qb end
+    end
+    return qbOf(GetLocalPlayer and GetLocalPlayer())            -- fall back to the local player
+end
+
+-- The player's ACTIVE weapon item instance (carries the ammo stat-tags), or nil if unarmed/holstered.
+function lib.getActiveWeaponItem(entity)
+    local qb = _resolveQuickbar(entity)
+    local it; if qb then pcall(function() it = qb:GetActiveSlotItem() end) end
+    return it
+end
+
+local function _statGet(it, tagName)
+    if not it then return nil end
+    local tag = _ammoTag(tagName); if not tag then return nil end
+    local v; pcall(function() v = it:GetStatTagStackCount(tag) end); return v
+end
+
+-- Set a stat-tag on an item instance to an ABSOLUTE value by adding/removing the delta. Server-authoritative.
+local function _statSet(it, tagName, value)
+    if not it or type(value) ~= "number" then return false end
+    local tag = _ammoTag(tagName); if not tag then return false end
+    local cur = 0; pcall(function() cur = it:GetStatTagStackCount(tag) or 0 end)
+    local delta = math.floor(value + 0.5) - cur
+    if delta > 0 then pcall(function() it:AddStatTagStack(tag, delta) end)
+    elseif delta < 0 then pcall(function() it:RemoveStatTagStack(tag, -delta) end) end
+    return true
+end
+
+-- Read the active weapon's ammo → { clip, capacity, spare } (nil if unarmed). Works client OR server.
+function lib.getWeaponAmmo(entity)
+    local it = lib.getActiveWeaponItem(entity)
+    if not it then return nil end
+    return { clip = _statGet(it, AMMO_CLIP), capacity = _statGet(it, AMMO_CAP), spare = _statGet(it, AMMO_SPARE) }
+end
+
+-- Total ammo (clip + spare) — the GTA `GetAmmoInPedWeapon` analogue (GTA counts total rounds, not clip/reserve split). 0 if unarmed.
+function lib.getWeaponAmmoTotal(entity)
+    local a = lib.getWeaponAmmo(entity)
+    return a and ((a.clip or 0) + (a.spare or 0)) or 0
+end
+
+-- Set the active weapon's clip and/or spare to ABSOLUTE counts (nil = leave unchanged). Server-side (persists).
+function lib.setWeaponAmmo(entity, clip, spare)
+    local it = lib.getActiveWeaponItem(entity)
+    if not it then return { ok = false, error = "no active weapon" } end
+    if clip  ~= nil then _statSet(it, AMMO_CLIP, clip) end
+    if spare ~= nil then _statSet(it, AMMO_SPARE, spare) end
+    return { ok = true }
+end
+
+-- Set just the reserve — the GTA `SetPedAmmo(ped, weapon, n)` analogue (GTA's SetPedAmmo sets total-carried; we map it to
+-- the RESERVE, the closest single-count meaning — the clip is refilled by the reload path). Server-side.
+function lib.setWeaponSpare(entity, n) return lib.setWeaponAmmo(entity, nil, n) end
+
+-- Add to the reserve — the GTA `AddAmmoToPed(ped, weapon, n)` analogue. Server-side.
+function lib.addWeaponSpare(entity, n)
+    local it = lib.getActiveWeaponItem(entity)
+    if not it then return { ok = false, error = "no active weapon" } end
+    local cur = _statGet(it, AMMO_SPARE) or 0
+    _statSet(it, AMMO_SPARE, cur + (tonumber(n) or 0))
+    return { ok = true }
+end

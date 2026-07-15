@@ -8,6 +8,8 @@
     "modules/string.lua",
     "modules/math.lua",
     "modules/cache.lua",
+    "modules/convar.lua",
+    "modules/resourcestate.lua",
     "modules/print.lua",
     "modules/locale.lua",
     "modules/waitfor.lua",
@@ -38,11 +40,28 @@
     "modules/screenfade.lua",
     "modules/map.lua",
     "modules/keystate.lua",
+    "modules/assets.lua",
     "modules/zexports.lua"
   ],
   "server": [
     "init.lua",
+    "modules/scheduler.lua",
+    "modules/class.lua",
+    "modules/table.lua",
+    "modules/array.lua",
+    "modules/string.lua",
+    "modules/math.lua",
+    "modules/cache.lua",
+    "modules/print.lua",
+    "modules/locale.lua",
+    "modules/waitfor.lua",
+    "modules/timer.lua",
+    "modules/callback.lua",
+    "modules/hooks.lua",
+    "modules/convar.lua",
+    "modules/resourcestate.lua",
     "modules/permissions.lua",
+    "modules/assets.lua",
     "modules/zexports.lua"
   ]
 }

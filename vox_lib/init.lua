@@ -7,7 +7,16 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.6.7"   -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
+lib._VERSION = "vox_lib 1.7.0"   -- 1.7.0: + asset enumeration (modules/assets.lua: enumerateAssets/serializeAssetTable/
+                                 --   writeAssetTable/registerAssetFamily — runtime UE AssetRegistry pool → the "run a command,
+                                 --   asset tables ready" engine; weapon/item/vehicle) + weapon AMMO (modules/weapon.lua:
+                                 --   getWeaponAmmo/getWeaponAmmoTotal/setWeaponAmmo/setWeaponSpare/addWeaponSpare — item-instance
+                                 --   ammo stat-tags, live-validated) + progressActive/getLocales (ox_lib-parity getters)
+                                 -- 1.6.9: + resource-state (getResourceState/hasResource/getResources via _G.__PackageLoader:
+                                 --   HasPackage/GetPackageMap — HELIX package-loaded query; FiveM GetResourceState equivalent)
+                                 -- 1.6.8: + convar store (getConvar/getConvarInt/getConvarBool/setConvar — FiveM server-config
+                                 --   equivalent, seeded from a VoxConvars table or setConvar; converter maps GetConvar* onto it)
+                                 -- foundation (class/table/array/string/math/cache/print/locale/waitFor/timer/callback/hook)
                                  -- + UI tier (notify/textUI/alert/progress/input/context/menu/skillCheck/radial)
                                  -- + cinematic (weather/freecam/camera) + character creator (appearance + per-slot tint)
                                  -- + entities (spawn/delete + freeze/collision/visible/model/health + bone idx/coords + AI goto
