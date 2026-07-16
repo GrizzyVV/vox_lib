@@ -16,11 +16,11 @@
      command. The exact signature + whether any source is reachable for gating are a BOOT-VALIDATION checkpoint — confirm live
      before relying on it; if source becomes reachable, wrap the body in `lib.hasPermission(src, 'admin')`.
 
-     USAGE (server console / admin):  vox_dumpassets <weapon|item|vehicle|ped|cosmetics|all> [filepath] ]]
+     USAGE (server console / admin):  vox_dumpassets <weapon|item|vehicle|vehicledef|ped|cosmetics|all> [filepath] ]]
 
 if type(RegisterCommand) ~= "function" then return end
 
-local DUMP_FAMILIES = { "weapon", "item", "vehicle", "ped", "cosmetics" }   -- 'all' dumps each of these
+local DUMP_FAMILIES = { "weapon", "item", "vehicle", "vehicledef", "ped", "cosmetics" }   -- 'all' dumps each of these
 
 local function _dump(family, filepath)
     -- cosmetics is a slot-catalog reader (not AssetRegistry path+prefix) → its own serialize/write path.
@@ -31,6 +31,13 @@ local function _dump(family, filepath)
         local list = lib.enumerateCosmetics()
         return ("[vox_lib] vox_dumpassets cosmetics: wrote %d entries -> %s"):format(list and #list or 0, filepath)
     end
+    if family == "vehicledef" then
+        filepath = filepath or "vox_vehicledefs.lua"
+        local ok, err = lib.writeVehicleDefTable(filepath)
+        if not ok then return ("[vox_lib] vox_dumpassets vehicledef: FAILED — %s"):format(tostring(err)) end
+        local list = lib.enumerateVehicleDefinitions()
+        return ("[vox_lib] vox_dumpassets vehicledef: wrote %d entries -> %s"):format(list and #list or 0, filepath)
+    end
     filepath = filepath or ("vox_assets_" .. family .. ".lua")
     local ok, err = lib.writeAssetTable(family, filepath)
     if not ok then return ("[vox_lib] vox_dumpassets %s: FAILED — %s"):format(family, tostring(err)) end
@@ -39,7 +46,7 @@ local function _dump(family, filepath)
 end
 
 RegisterCommand("vox_dumpassets",
-    "Dump the live HELIX asset pool (weapon|item|vehicle|ped|cosmetics|all) to a curatable .lua  [server/admin]",
+    "Dump the live HELIX asset pool (weapon|item|vehicle|vehicledef|ped|cosmetics|all) to a curatable .lua  [server/admin]",
     function(a, b)
         -- HELIX passes fn(argsTable, consoleCmdObject). ⚠ the token table is OFFSET on this build — user args start at
         -- index [2] ([1] is nil); validated live 2026-07-15 via an arg-capture probe (NOT [1] as one would assume).
@@ -55,7 +62,7 @@ RegisterCommand("vox_dumpassets",
         -- and let it write the default relative filename (lands in the server process cwd). A computed sensible output
         -- dir (resource dir / a known exports folder) is a follow-up refinement.
         if not family then
-            pcall(print, "[vox_lib] usage: vox_dumpassets <weapon|item|vehicle|ped|cosmetics|all>   (writes vox_assets_<family>.lua)")
+            pcall(print, "[vox_lib] usage: vox_dumpassets <weapon|item|vehicle|vehicledef|ped|cosmetics|all>   (writes vox_assets_<family>.lua)")
             return
         end
         local fams = (family == "all") and DUMP_FAMILIES or { family }

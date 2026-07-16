@@ -7,7 +7,12 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.7.2"   -- 1.7.2: + COSMETICS/CLOTHING enumeration (modules/assets.lua: enumerateCosmetics/
+lib._VERSION = "vox_lib 1.7.3"   -- 1.7.3: + VEHICLE-DEFINITION catalog (modules/assets.lua: enumerateVehicleDefinitions/
+                                 --   writeVehicleDefTable — the DA_* HVehicleDefinition layer: 8 defs {id,name,vehicleType,path},
+                                 --   live-validated via exports; proves the "DA_* native-definition layer" reader generalizes
+                                 --   past cosmetics — enumerate a DataAsset CLASS + read its config fields. `vox_dumpassets
+                                 --   vehicledef`. ⚠ def catalog (8) ≠ spawn-BP pool (3, the `vehicle` family) — reconcile per vehicle.
+                                 -- 1.7.2: + COSMETICS/CLOTHING enumeration (modules/assets.lua: enumerateCosmetics/
                                  --   serializeCosmeticTable/writeCosmeticTable — the Mutable cosmetic catalog
                                  --   DA_CharacterCustomizationData.SlotMap → 30 slots / 433 items {id,slot,name,gender};
                                  --   live-validated via exports 2026-07-15) + PED asset family (DA_PawnData_*_NPC_*) +
