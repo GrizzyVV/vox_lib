@@ -7,7 +7,13 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.7.3"   -- 1.7.3: + VEHICLE-DEFINITION catalog (modules/assets.lua: enumerateVehicleDefinitions/
+lib._VERSION = "vox_lib 1.7.4"   -- 1.7.4: + KVP parity store (modules/kvp.lua: set/get/delete/findKvp + Int/Float typed
+                                 --   variants — FiveM Resource-KVP equivalent; server scope via vox_sqlite broker
+                                 --   [in-memory degrade if absent], client scope per-player-identifier with lazy
+                                 --   hydrate over the export boundary + fire-and-forget persist). ⚠ UNVALIDATED
+                                 --   IN-ENGINE — Lua probe staged in the converter VALIDATION_RUNBOOK; hold claims
+                                 --   (and this push) until the probe passes.
+                                 -- 1.7.3: + VEHICLE-DEFINITION catalog (modules/assets.lua: enumerateVehicleDefinitions/
                                  --   writeVehicleDefTable — the DA_* HVehicleDefinition layer: 8 defs {id,name,vehicleType,path},
                                  --   live-validated via exports; proves the "DA_* native-definition layer" reader generalizes
                                  --   past cosmetics — enumerate a DataAsset CLASS + read its config fields. `vox_dumpassets

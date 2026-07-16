@@ -41,6 +41,7 @@
     "modules/map.lua",
     "modules/keystate.lua",
     "modules/assets.lua",
+    "modules/kvp.lua",
     "modules/zexports.lua"
   ],
   "server": [
@@ -64,6 +65,7 @@
     "modules/assets.lua",
     "modules/weapon.lua",
     "modules/assetdump.lua",
+    "modules/kvp.lua",
     "modules/zexports.lua"
   ]
 }

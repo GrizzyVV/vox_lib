@@ -458,6 +458,27 @@ e.g. `lib.string.upper` and the extras below both work.
 > halt the HELIX package); `lib.locale` is fed a table rather than auto-loading `locales/*.json` (pending verified file IO);
 > cross-resource hook dispatch is not yet wired (local pipelines are). See [`tech.md`](tech.md).
 
+## KVP (FiveM Resource-KVP parity)
+
+Per-resource persistent key-value store — the HELIX home for converted `Set/Get/DeleteResourceKvp*` calls
+(`modules/kvp.lua`, v1.7.4). Every function takes the owning resource's name first (converted code passes its own
+via `GetCurrentResourceName()`).
+
+| Surface | Highlights |
+|---|---|
+| `lib.setKvp(resource, key, value)` / `setKvpInt` / `setKvpFloat` | Typed writes. Server side persists via the **vox_sqlite** broker (table `vox_kvp`); without vox_sqlite it degrades to in-memory (one-time console warn). |
+| `lib.getKvp(resource, key)` / `getKvpInt` / `getKvpFloat` | Typed reads with FiveM-exact defaults when unset: `nil` / `0` / `0.0`. |
+| `lib.deleteKvp(resource, key)` | Remove a key. |
+| `lib.findKvp(resource, prefix)` | Sorted array of keys matching a prefix (backs the `StartFindKvp/FindKvp/EndFindKvp` handle triplet in the converter's compat layer). |
+
+Sides mirror FiveM's model: the **server** store is one scope per resource; the **client** store is **per-player**
+(keyed on the stable account identifier, resolved server-side) — an in-memory cache lazily hydrated from the server on
+first access (safe to call through `exports`; the yield crosses), with writes persisted fire-and-forget (matching
+FiveM KVP's own async-flush contract).
+
+> ⚠ **Status: built 2026-07-16, not yet validated in-engine.** The Lua probe (server round-trip, restart persistence,
+> client hydrate) is staged; treat behavior claims as pending until it passes.
+
 ## Gotchas
 
 - **Return-value calls yield** — always wrap `alertDialog`/`inputDialog`/`progressBar`/`skillCheck` in a thread.
