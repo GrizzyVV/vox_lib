@@ -10,9 +10,11 @@ lib = lib or {}
 lib._VERSION = "vox_lib 1.7.4"   -- 1.7.4: + KVP parity store (modules/kvp.lua: set/get/delete/findKvp + Int/Float typed
                                  --   variants — FiveM Resource-KVP equivalent; server scope via vox_sqlite broker
                                  --   [in-memory degrade if absent], client scope per-player-identifier with lazy
-                                 --   hydrate over the export boundary + fire-and-forget persist). ⚠ UNVALIDATED
-                                 --   IN-ENGINE — Lua probe staged in the converter VALIDATION_RUNBOOK; hold claims
-                                 --   (and this push) until the probe passes.
+                                 --   hydrate over the export boundary + fire-and-forget persist). ✅ SERVER PATH
+                                 --   Lua-VALIDATED 2026-07-16 (HELIX_Dev PIE, vox_probe): set/get round-trip, typed
+                                 --   defaults nil/0/0.0, findKvp prefix, delete, SQL write-through (vox_kvp rows
+                                 --   confirmed via vox_sqlite), PIE-restart persistence. ⚠ CLIENT path (lazy hydrate,
+                                 --   per-player scoping) pending — Play-As-Client run, converter VALIDATION_RUNBOOK M2.
                                  -- 1.7.3: + VEHICLE-DEFINITION catalog (modules/assets.lua: enumerateVehicleDefinitions/
                                  --   writeVehicleDefTable — the DA_* HVehicleDefinition layer: 8 defs {id,name,vehicleType,path},
                                  --   live-validated via exports; proves the "DA_* native-definition layer" reader generalizes
