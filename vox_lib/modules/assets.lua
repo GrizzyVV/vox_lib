@@ -29,6 +29,13 @@ local FAMILIES = {
     weapon  = { roots = { "/HelixWeapons/Weapons" },              prefix = "ID_Weapon_" },
     item    = { roots = { "/HelixRoleplay/Items" },               prefix = "ID_Misc_" },
     vehicle = { roots = { "/HelixVehicleAssets/Blueprints/Vehicles" }, prefix = "BP_", suffix = "_Vehicle" },
+    -- ped = the native NPC archetype pool (DA_PawnData_*_NPC_*): Dummy/Police/SWAT/Walker/Showroom. Discovered live via the
+    -- AssetRegistry 2026-07-15 (5 under /HelixAICore). Player PawnData lives under /HelixGameplay (excluded by this root), so
+    -- /HelixAICore + DA_PawnData_ isolates the NPC catalog.
+    -- ⚠ NOT path+prefix families (handled elsewhere): CLOTHING/COSMETICS is a SLOT catalog (a TMap on DA_CharacterCustomizationData),
+    --   a different identity model → its own reader `lib.enumerateCosmetics` (below). FiveM OBJECTS/props have NO bounded native
+    --   pool → they are Vault/server-content-driven; a server points at their prop root via lib.registerAssetFamily.
+    ped     = { roots = { "/HelixAICore" },                       prefix = "DA_PawnData_" },
 }
 
 -- Register/override a family at runtime (so a resource can add its own Vault content root without editing this file).
@@ -119,6 +126,89 @@ end
 function lib.writeAssetTable(family, filepath, opts)
     if type(filepath) ~= "string" then return false, "filepath required" end
     local src, err = lib.serializeAssetTable(family, opts)
+    if not src then return false, err end
+    local f, ioerr = io.open(filepath, "w")
+    if not f then return false, "cannot open file: " .. tostring(ioerr) end
+    f:write(src)
+    f:close()
+    return true
+end
+
+-- ── COSMETICS / CLOTHING enumeration (a DIFFERENT identity model — a slot catalog, NOT path+prefix) ────────────────────
+-- HELIX clothing/appearance is the Mutable Customizable-Object system. The AVAILABLE catalog is a `TMap` on the cosmetics
+-- data asset: `DA_CharacterCustomizationData.SlotMap` = ~30 `Cosmetic.Slot.*` GameplayTags → `CharacterCustomizationSlotEntries`
+-- whose `.Entries` is a `TMap<id, entry>` (id = a readable string like `W_Top_Clare_1`; entry carries `DisplayName`,
+-- `SupportedGenders`, mesh, tint template). So this reader walks the catalog map, NOT the AssetRegistry — hence its own
+-- function rather than a FAMILIES row. VALIDATED LIVE 2026-07-15 (30 slots / 433 items read entirely from Lua).
+--   • UnLua uses PascalCase property names (`SlotMap`, `.Entries`, `.DisplayName`) — NOT the Python snake_case.
+--   • TMap access: `:Num()` / `:Keys()` (→ TArray, 1-indexed) / `:Find(key)`. Slot tag name via `key.TagName` (fallback
+--     `UBlueprintGameplayTagLibrary.GetTagName`).
+-- ⚠ Vault-merge: this reads the NATIVE catalog asset; whether installed "Wearable" Vault packages merge into THIS SlotMap or
+--   a runtime-merged catalog is UNVERIFIED (needs a wearable-installed world). Override the source via opts.catalog if so.
+local COSMETIC_CATALOG = "/HelixCharacterCreator/DataAssets/DA_CharacterCustomizationData.DA_CharacterCustomizationData"
+
+-- Enumerate the cosmetic catalog → flat list { {id, slot, name, gender}, ... } (sorted by slot then id), CACHED.
+-- opts.catalog = override the catalog asset path; opts.refresh = force rescan. Returns nil,err on failure.
+function lib.enumerateCosmetics(opts)
+    opts = opts or {}
+    if _cache.cosmetics and not opts.refresh then return _cache.cosmetics end
+    local list = {}
+    local ok, err = pcall(function()
+        local da = UE.UObject.Load(opts.catalog or COSMETIC_CATALOG)
+        if not da then error("cosmetic catalog failed to load") end
+        local sm = da.SlotMap
+        if not sm then error("SlotMap property nil (wrong build/asset?)") end
+        local keys = sm:Keys()
+        for i = 1, keys:Length() do
+            local k = keys:Get(i)
+            local slot = "?"
+            pcall(function() slot = tostring(k.TagName) end)
+            if slot == "?" or slot == "nil" then pcall(function() slot = tostring(UE.UBlueprintGameplayTagLibrary.GetTagName(k)) end) end
+            local val = sm:Find(k)
+            local ent = val and val.Entries
+            if ent then
+                local eks = ent:Keys()
+                for j = 1, eks:Length() do
+                    local ek = eks:Get(j)
+                    local e = ent:Find(ek)
+                    local name, gender
+                    if e then
+                        pcall(function() name = tostring(e.DisplayName) end)
+                        pcall(function() gender = e.SupportedGenders end)
+                    end
+                    list[#list + 1] = { id = tostring(ek), slot = slot, name = name, gender = gender }
+                end
+            end
+        end
+    end)
+    if not ok then return nil, "cosmetics enumeration failed: " .. tostring(err) end
+    table.sort(list, function(a, b) if a.slot == b.slot then return a.id < b.id end return a.slot < b.slot end)
+    _cache.cosmetics = list
+    return list
+end
+
+-- Serialize the cosmetic catalog to a Lua-source data-table STRING (curatable dump; id/slot are source of truth).
+function lib.serializeCosmeticTable(opts)
+    local list, err = lib.enumerateCosmetics(opts)
+    if not list then return nil, err end
+    local lines = {
+        "-- Auto-generated by vox_lib lib.serializeCosmeticTable() — the LIVE cosmetic catalog (slot + id + name).",
+        "-- ids/slots are the source of truth; curate the metadata. Equip via the cosmetics system by id.",
+        "return {",
+    }
+    for _, c in ipairs(list) do
+        local nm = c.name and ("'" .. tostring(c.name):gsub("\\", "\\\\"):gsub("'", "\\'") .. "'") or "nil"
+        lines[#lines + 1] = string.format("  { id = '%s', slot = '%s', name = %s, gender = %s },",
+            c.id, c.slot, nm, tostring(c.gender or "nil"))
+    end
+    lines[#lines + 1] = "}"
+    return table.concat(lines, "\n")
+end
+
+-- Write the serialized cosmetic catalog to a `.lua` file (the optional curatable dump). Returns ok,err. Server/admin only.
+function lib.writeCosmeticTable(filepath, opts)
+    if type(filepath) ~= "string" then return false, "filepath required" end
+    local src, err = lib.serializeCosmeticTable(opts)
     if not src then return false, err end
     local f, ioerr = io.open(filepath, "w")
     if not f then return false, "cannot open file: " .. tostring(ioerr) end

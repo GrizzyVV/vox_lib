@@ -7,7 +7,12 @@
      Standard Lua 5.4 (probe-verified HELIX runtime). ]]
 
 lib = lib or {}
-lib._VERSION = "vox_lib 1.7.1"   -- 1.7.1: + WEAPON give/remove (modules/weapon.lua: giveWeapon/removeWeapon/removeAllWeapons
+lib._VERSION = "vox_lib 1.7.2"   -- 1.7.2: + COSMETICS/CLOTHING enumeration (modules/assets.lua: enumerateCosmetics/
+                                 --   serializeCosmeticTable/writeCosmeticTable — the Mutable cosmetic catalog
+                                 --   DA_CharacterCustomizationData.SlotMap → 30 slots / 433 items {id,slot,name,gender};
+                                 --   live-validated via exports 2026-07-15) + PED asset family (DA_PawnData_*_NPC_*) +
+                                 --   vox_dumpassets now covers ped|cosmetics. (Objects/props = no native pool → Vault-driven.)
+                                 -- 1.7.1: + WEAPON give/remove (modules/weapon.lua: giveWeapon/removeWeapon/removeAllWeapons
                                  --   — HELIX-id inventory mutation, server-authoritative; live-validated 2026-07-15 net-zero
                                  --   give+remove via exports) + vox_dumpassets command (modules/assetdump.lua, server-only:
                                  --   dumps the live pool to a curatable .lua) + FIX: weapon.lua now loads SERVER-side
